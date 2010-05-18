@@ -80,11 +80,12 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 	}
 	
 	public double ThresholdAdjusterBy3Dobj(ImagePlus imp, int initTh){
-		IJ.run("3D OC Options", "volume surface nb_of_obj._voxels nb_of_surf._voxels " +
-				"integrated_density mean_gray_value std_dev_gray_value median_gray_value " +
-				"minimum_gray_value maximum_gray_value centroid mean_distance_to_surface " +
-				"std_dev_distance_to_surface median_distance_to_surface centre_of_mass " +
-				"bounding_box dots_size=5 font_size=10 redirect_to=none");
+		// somehow this part causes error in osx
+//		IJ.run("3D OC Options", "volume surface nb_of_obj._voxels nb_of_surf._voxels " +
+//				"integrated_density mean_gray_value std_dev_gray_value median_gray_value " +
+//				"minimum_gray_value maximum_gray_value centroid mean_distance_to_surface " +
+//				"std_dev_distance_to_surface median_distance_to_surface centre_of_mass " +
+//				"bounding_box dots_size=5 font_size=10 redirect_to=none");
 		int localthres =0;
 		Duplicator dup = new Duplicator();	//this duplication may not be necessary
 		ImagePlus impcopy = dup.run(imp);
