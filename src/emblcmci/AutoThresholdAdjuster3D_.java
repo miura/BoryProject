@@ -4,6 +4,7 @@ package emblcmci;
  * 
  * 
  */
+import java.util.ArrayList;
 import java.util.Vector;
 import ij.plugin.Duplicator;
 import ij.*;
@@ -11,6 +12,7 @@ import Utilities.Counter3D;
 import Utilities.Object3D;
 import ij.gui.GenericDialog;
 import ij.measure.Calibration;
+import ij.measure.ResultsTable;
 import ij.plugin.*;
 import ij.process.ImageProcessor;
 
@@ -47,7 +49,7 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 		GenericDialog gd = new GenericDialog("Bory Dot Analysis");
 		gd.addChoice("Ch0:", titles, titles[0]);
 		gd.addChoice("Ch1:", titles, titles[1]);
-		String title3 = titles.length>2&&!IJ.macroRunning()?titles[2]:none;
+		//String title3 = titles.length>2&&!IJ.macroRunning()?titles[2]:none;
 		gd.addCheckbox("Create Merged Binary", createComposite);
 		//gd.addCheckbox("Keep Source Images", false);
 		gd.showDialog();
@@ -63,22 +65,48 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 		if (imp0 == null) return;
 		if (imp0.getStackSize() == 1) return;		
 		if (imp1.getStackSize() == 1) return;
-		
+		SegAndMeasure( imp0, imp1);
+	}
+	
+	public void SegAndMeasure(ImagePlus imp0, ImagePlus imp1){
 		ImagePlus binimp0 = segmentaitonByObjectSize(imp0);
 		ImagePlus binimp1 = segmentaitonByObjectSize(imp1);
-		binimp0.show();
-		binimp1.show();
+		//binimp0.show();
+		//binimp1.show();
 		
 		if (createComposite) {
+			ImagePlus ch0proj=null;
+			ImagePlus ch1proj=null;
+			ch0proj = CreateZprojTimeSeries(binimp0, imp0.getNSlices(), imp0.getNFrames());
+			ch1proj = CreateZprojTimeSeries(binimp1, imp1.getNSlices(), imp1.getNFrames());
 			ImageStack dummy = null;
 			RGBStackMerge rgbm = new RGBStackMerge();
-			ImageStack rgbstack = rgbm.mergeStacks(imp0.getWidth(), imp0.getHeight(), imp0.getStackSize(), binimp0.getStack(), binimp1.getStack(), dummy, true);
-			ImagePlus rgbbin = new ImagePlus("binMerged", rgbstack);
+			ImageStack rgbstack = rgbm.mergeStacks(ch0proj.getWidth(), ch0proj.getHeight(), ch0proj.getStackSize(), ch0proj.getStack(), ch1proj.getStack(), dummy, true);
+			ImagePlus rgbbin = new ImagePlus("binProjMerged", rgbstack);
 			rgbbin.show();
+			
 		}
-		//ImagePlus impbin = segmentaitonByObjectSize(imp);
-		//measureDots(binimp0);
+		measureDots(binimp0);
+		measureDots(binimp1);		
 	}
+
+	public ImagePlus CreateZprojTimeSeries(ImagePlus imp, int zframes, int tframes){
+		ImageStack zprostack = new ImageStack();
+		zprostack = imp.createEmptyStack();
+		ZProjector zpimp = new ZProjector(imp);
+		zpimp.setMethod(1); //1 is max intensity projection	
+		for (int i=0; i<tframes;i++){
+			zpimp.setStartSlice(i*zframes+1);
+			zpimp.setStopSlice((i+1)*zframes);
+			zpimp.doProjection();
+			zprostack.addSlice("t="+Integer.toString(i+1), zpimp.getProjection().getProcessor());
+		}
+		ImagePlus projimp = new ImagePlus();
+		projimp.setStack(zprostack);
+		
+		return projimp;				
+	}
+	
 	// processes each time point separated. 
 	public ImagePlus segmentaitonByObjectSize(ImagePlus imp){
 
@@ -185,24 +213,29 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 		//IJ.log(Integer.toString(imp.getHeight()));
 		ImagePlus imps = null;
 		Duplicator singletime = new Duplicator();
+		ArrayList<Double> coords = new ArrayList<Double>();
+		ArrayList<Integer> paras = new ArrayList<Integer>();
+		
 		for (int j=0; j<tframes; j++){
+			coords.clear();
+			paras.clear();
 			IJ.log("====frame "+Integer.toString(j)+" ==========");
 			imps = singletime.run(imp, j*zframes+1, j*zframes+zframes); 
-			 thr = 128;
-			 minSize = 3;
-			 maxSize = 1000;
-			 excludeOnEdges = false;
-			 redirect = false;
-			 Counter3D OC=new Counter3D(imps, thr, minSize, maxSize, excludeOnEdges, redirect);
-			 newRT = true;
+			thr = 128;
+			minSize = 3;
+			maxSize = 1000;
+			excludeOnEdges = false;
+			redirect = false;
+			Counter3D OC=new Counter3D(imps, thr, minSize, maxSize, excludeOnEdges, redirect);
+			newRT = true;
 			 //OC.showStatistics(newRT);
 			 //if (!Counter3D.getObjects) Counter3DgetObjects();
-			 float[][] centroidList=OC.getCentroidList();
-			 for (int i=0; i<centroidList.length; i++) {
+			float[][] centroidList=OC.getCentroidList();
+			for (int i=0; i<centroidList.length; i++) {
 				 float cx = centroidList[i][0];
 				 float cy = centroidList[i][1];
 				 float cz = centroidList[i][2];
-				 IJ.log(Float.toString(cx)+", "+Float.toString(cy)+", "+Float.toString(cz)+", ");
+				 //IJ.log(Float.toString(cx)+", "+Float.toString(cy)+", "+Float.toString(cz)+", ");
 			 }
 			 Vector<Object3D> obj = OC.getObjectsList();
 			 int nobj = obj.size();
@@ -223,10 +256,44 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 				 Cent = "("+Float.toString(tmpArrayC[0])+","+Float.toString(tmpArrayC[1])+","+Float.toString(tmpArrayC[2])+")";
 				 opt = "Object"+Integer.toString(i)+" vol="+Integer.toString(volume)+ "\t "+Cent+" : IntDen"+Float.toString(intden);
 				 IJ.log(opt);
+				 //coords.add(e)
 			 }
 		} 
 		 //IJ.showMessage("My_Plugin","Hello world!");
 	}
+	
+	   public void showStatistics(String chnum, int[][] intA, float[][] floatA){
+	        ResultsTable rt;        
+	        rt=new ResultsTable();	        
+	        for (int i=0; i<intA.length; i++){
+	            rt.incrementCounter();
+	            rt.setValue("Volume", i, intA[i][0]);
+	            rt.setValue("IntDen", i, intA[i][1]);
+	            //rt.setValue("meanint", i, intA[i][2]);
+	            rt.setValue("x", i, floatA[i][0]);
+	            rt.setValue("y", i, floatA[i][1]);
+	            rt.setValue("z", i, floatA[i][2]);
+	            rt.setValue("cx", i, floatA[i][3]);
+	            rt.setValue("cy", i, floatA[i][4]);
+	            rt.setValue("cz", i, floatA[i][5]);	            	            
+	        }
+	       
+	        rt.show("Statistics"+chnum);
+	        
+/*
+ * 		int[][] rankA = new int[distA.length][distA[0].length];
+		ArrayList<Double> list = new ArrayList<Double>();
+		ArrayList<Integer> rank = new ArrayList<Integer>();
+		for(int j = 0; j<distA.length; j++){
+			list.clear();
+			for(int i =0; i<distA[0].length; i++) {
+				list.add(distA[j][i]);
+				//System.out.println("from distA to list:" + Double.toString(distA[j][i]));
+			}	        
+ */
+	        
+
+	    }
 
 }
 
