@@ -9,12 +9,15 @@ import ij.plugin.Duplicator;
 import ij.*;
 import Utilities.Counter3D;
 import Utilities.Object3D;
+import ij.gui.GenericDialog;
 import ij.measure.Calibration;
 import ij.plugin.*;
 import ij.process.ImageProcessor;
 
 public class AutoThresholdAdjuster3D_ implements PlugIn {
 
+	private static boolean createComposite = true;
+	
 	int thr, minSize, maxSize, dotSize, fontSize;
 	boolean excludeOnEdges, showObj, showSurf, showCentro, showCOM, showNb, whiteNb, newRT, showStat, showMaskedImg, closeImg, showSummary, redirect;
 
@@ -23,15 +26,58 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 	int maxloops =50;	// maximum loop for optimum threshold searching
 	
 	public void run(String arg) {
-		ImagePlus imp;
-		imp = ij.WindowManager.getCurrentImage();
+		//ImagePlus imp;
+		//imp = ij.WindowManager.getCurrentImage();
+
+		//copied and modifed from image - color merge... (RGBStackMerge.java)
+		int[] wList = WindowManager.getIDList();
+		if (wList==null) {
+			IJ.error("bory dot analysis", "No images are open.");
+			return;
+		}
+
+		String[] titles = new String[wList.length+1];
+		for (int i=0; i<wList.length; i++) {
+			ImagePlus imp = WindowManager.getImage(wList[i]);
+			titles[i] = imp!=null?imp.getTitle():"";
+		}
+		String none = "*None*";
+		titles[wList.length] = none;
+
+		GenericDialog gd = new GenericDialog("Bory Dot Analysis");
+		gd.addChoice("Ch0:", titles, titles[0]);
+		gd.addChoice("Ch1:", titles, titles[1]);
+		String title3 = titles.length>2&&!IJ.macroRunning()?titles[2]:none;
+		gd.addCheckbox("Create Merged Binary", createComposite);
+		//gd.addCheckbox("Keep Source Images", false);
+		gd.showDialog();
+		if (gd.wasCanceled())
+			return;
+		int[] index = new int[2];
+		index[0] = gd.getNextChoiceIndex();
+		index[1] = gd.getNextChoiceIndex();
+		createComposite = gd.getNextBoolean();
+		ImagePlus imp0 = WindowManager.getImage(wList[index[0]]);
+		ImagePlus imp1 = WindowManager.getImage(wList[index[1]]);		
 		//cal.set
-		if (imp == null) return;
-		ImagePlus binimp = segmentaitonByObjectSize(imp);
-		binimp.show();
-		//ImagePlus impbin = segmentaitonByObjectSize(imp);
+		if (imp0 == null) return;
+		if (imp0.getStackSize() == 1) return;		
+		if (imp1.getStackSize() == 1) return;
 		
-		//measureDots(impbin);
+		ImagePlus binimp0 = segmentaitonByObjectSize(imp0);
+		ImagePlus binimp1 = segmentaitonByObjectSize(imp1);
+		binimp0.show();
+		binimp1.show();
+		
+		if (createComposite) {
+			ImageStack dummy = null;
+			RGBStackMerge rgbm = new RGBStackMerge();
+			ImageStack rgbstack = rgbm.mergeStacks(imp0.getWidth(), imp0.getHeight(), imp0.getStackSize(), binimp0.getStack(), binimp1.getStack(), dummy, true);
+			ImagePlus rgbbin = new ImagePlus("binMerged", rgbstack);
+			rgbbin.show();
+		}
+		//ImagePlus impbin = segmentaitonByObjectSize(imp);
+		//measureDots(binimp0);
 	}
 	// processes each time point separated. 
 	public ImagePlus segmentaitonByObjectSize(ImagePlus imp){
