@@ -1,8 +1,9 @@
 package emblcmci;
 
-/*use 3D object counter to adjust threshold level of 3D stack. 
+/* segmentation of yeast chromosome 
+ * use 3D object counter to adjust threshold level of 3D stack. 
  * 
- * 
+ *   
  */
 import java.util.ArrayList;
 import java.util.Vector;
@@ -86,8 +87,43 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 			rgbbin.show();
 			
 		}
-		measureDots(binimp0);
-		measureDots(binimp1);		
+		//measurement part
+		ArrayList<Integer> objindex = new ArrayList<Integer>();
+		ArrayList<Float> coords = new ArrayList<Float>();
+		ArrayList<Integer> vols = new ArrayList<Integer>();
+		ArrayList<Float> intdens = new ArrayList<Float>();
+		
+		int ch0objnum = measureDots(binimp0, "Ch0", objindex, coords, vols, intdens);
+		
+		int[][] intCh0A = new int[ch0objnum][2];
+		float[][] floatCh0A = new float[ch0objnum][7];		
+		ConvListToArray(intCh0A, floatCh0A,  objindex, coords, vols, intdens, 0);
+		showStatistics("ch0", intCh0A, floatCh0A);
+
+		int ch1objnum = measureDots(binimp1, "Ch1", objindex, coords, vols, intdens);
+		ch1objnum -= ch0objnum;
+
+		int[][] intCh1A = new int[ch1objnum][2];
+		float[][] floatCh1A = new float[ch1objnum][7];		
+		ConvListToArray(intCh1A, floatCh1A,  objindex, coords, vols, intdens, ch0objnum);
+		showStatistics("ch1", intCh1A, floatCh1A);
+		
+		//analysis part
+		
+	}
+	public void ConvListToArray(int[][] intA, float[][] floatA, 
+			ArrayList<Integer> objindex, 
+			ArrayList<Float> coords, 
+			ArrayList<Integer> vols, 
+			ArrayList<Float> intdens, int startindex){
+		for (int i=0; i<intA.length; i++){
+			intA[i][0] = objindex.get(startindex + i);
+			intA[i][1] = vols.get(startindex + i);
+			floatA[i][0] = coords.get(startindex + i * 3);
+			floatA[i][1] = coords.get(startindex + i * 3 + 1);
+			floatA[i][2] = coords.get(startindex + i * 3 + 2);
+			floatA[i][6] = intdens.get(startindex + i);
+		}
 	}
 
 	public ImagePlus createZprojTimeSeries(ImagePlus imp, int zframes, int tframes){
@@ -202,10 +238,15 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 		return localthres;
 	}
 	
-	public void measureDots(ImagePlus imp) {	
+	public int measureDots(ImagePlus imp, String chnum, 
+			ArrayList<Integer> objindex, 
+			ArrayList<Float> coords, 
+			ArrayList<Integer> vols, 
+			ArrayList<Float> intdens) {	
 		
+		int listsize = objindex.size();
 		int nSlices = imp.getStackSize();
-		if (nSlices ==1) return;
+		if (nSlices ==1) return -1;
 		int zframes =8; // TODO
 		int tframes = nSlices/zframes;
 		Calibration cal = imp.getCalibration();
@@ -213,10 +254,7 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 		//IJ.log(Integer.toString(imp.getHeight()));
 		ImagePlus imps = null;
 		Duplicator singletime = new Duplicator();
-		ArrayList<Integer> objindex = new ArrayList<Integer>();
-		ArrayList<Float> coords = new ArrayList<Float>();
-		ArrayList<Integer> vols = new ArrayList<Integer>();
-		ArrayList<Float> intdens = new ArrayList<Float>();
+
 		
 		for (int j=0; j<tframes; j++){
 			//coords.clear();
@@ -265,18 +303,8 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 			 }
 			 
 		} 
-		int[][] intA = new int[objindex.size()][2];
-		float[][] floatA = new float[objindex.size()][7];		
 		
-		for (int i=0; i<objindex.size(); i++){
-			intA[i][0] = objindex.get(i);
-			intA[i][1] = vols.get(i);
-			floatA[i][0] = coords.get(i*3);
-			floatA[i][1] = coords.get(i*3+1);
-			floatA[i][2] = coords.get(i*3+2);
-			floatA[i][6] = intdens.get(i);			
-		}
-		showStatistics("ch0", intA, floatA);
+		return objindex.size();
 	}
 	
 	   public void showStatistics(String chnum, int[][] intA, float[][] floatA){
@@ -286,33 +314,151 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 	            rt.incrementCounter();
 	            rt.setValue("frame", i, intA[i][0]);
 	            rt.setValue("Volume", i, intA[i][1]);
-	            //rt.setValue("IntDen", i, intA[i][1]);
-	            //rt.setValue("meanint", i, intA[i][2]);
 	            rt.setValue("x", i, floatA[i][0]);
 	            rt.setValue("y", i, floatA[i][1]);
 	            rt.setValue("z", i, floatA[i][2]);
-	            //rt.setValue("cx", i, floatA[i][3]);
-	            //rt.setValue("cy", i, floatA[i][4]);
-	            //rt.setValue("cz", i, floatA[i][5]);
 	            rt.setValue("Intden", i, floatA[i][6]);
 	        }
 	       
-	        rt.show("Statistics"+chnum);
-	        
-/*
- * 		int[][] rankA = new int[distA.length][distA[0].length];
-		ArrayList<Double> list = new ArrayList<Double>();
-		ArrayList<Integer> rank = new ArrayList<Integer>();
-		for(int j = 0; j<distA.length; j++){
-			list.clear();
-			for(int i =0; i<distA[0].length; i++) {
-				list.add(distA[j][i]);
-				//System.out.println("from distA to list:" + Double.toString(distA[j][i]));
-			}	        
- */
-	        
+	        rt.show("Statistics"+chnum);     
 
 	    }
 
 }
+
+/*
+ * macro "connect dots in different channels"{
+	LinkerCore();	
+}
+
+function LinkerCore(){
+	if (nResults==0) exit("not measured??");
+	for(i=0; i<connectArray.length; i++) connectArray[i] =-1;
+	 DotLinker(tframes);
+	setColor(255, 255, 255);
+	for (i=0; i<tframes; i++){
+		//setSlice(i+1);
+		pstr = "time:" + i  + "\n"
+			+ "   ch0: "	+ connectArray[i*14 ]
+				+", "	+ connectArray[i*14 +1] 
+ 				+", "	+ connectArray[i*14 +2]
+			+ "\n   ch1: "	+ connectArray[i*14 +3]
+				+", "	+ connectArray[i*14 +3 +1] 
+ 				+", "	+ connectArray[i*14 +3 +2];
+		//drawLine(connectArray[i*14], connectArray[i*14+1], connectArray[i*14+3], connectArray[i*14+4]);
+		if (connectArray[i*14 +7] !=-1) {
+			pstr = pstr + "\n   ch0: "+   connectArray[i*14 +7]
+				+", "+   connectArray[i*14 +7+1]
+				+", "+   connectArray[i*14 +7+2]
+				+ "\n   ch1: "+   connectArray[i*14 +7+3]
+				+", "+   connectArray[i*14 +7+3+1]
+				+", "+   connectArray[i*14 +7+3+2];
+				//drawLine(connectArray[i*14+7], connectArray[i*14+7+1], connectArray[i*14+7+3], connectArray[i*14+7+4]);
+
+		}
+		print(pstr);
+ 
+	}
+}
+
+function DotLinker(tframes){
+	for (i=0; i<tframes; i++) {
+		ch0dots = returnDotNumber(0, i);
+		ch1dots = returnDotNumber(1, i);
+		//print(i +":  Ch0 dots:", ch0dots, "- Ch1 dots:", ch1dots);
+		
+		if ((ch0dots != 0) && (ch1dots != 0)) {
+
+			if ((ch0dots == 1) && (ch1dots == 1)) {
+				StoreCoordinates(connectArray, i, 0, 0, 0);
+				StoreCoordinates(connectArray, i, 1, 0, 0);
+			} else {
+				if ((ch0dots >= 2) && (ch1dots >= 2)) {
+					flag = compare2x2(i);
+					if (flag ==1) {
+						StoreCoordinates(connectArray, i, 0, 0, 0);
+						StoreCoordinates(connectArray, i, 1, 0, 0);
+						StoreCoordinates(connectArray, i, 0, 1, 1);
+						StoreCoordinates(connectArray, i, 1, 1, 1);
+					} else {
+						StoreCoordinates(connectArray, i, 0, 0, 0);
+						StoreCoordinates(connectArray, i, 1, 0, 1);
+						StoreCoordinates(connectArray, i, 0, 1, 1);
+						StoreCoordinates(connectArray, i, 1, 1, 0);
+					}
+				} else {		//either one of them is only one. 
+					flag = compare2x1(i);
+					if (flag ==1) {
+						StoreCoordinates(connectArray, i, 0, 0, 0);
+						StoreCoordinates(connectArray, i, 1, 0, 0);
+					} else {
+						if (flag ==2) {
+							StoreCoordinates(connectArray, i, 0, 0, 0);
+							StoreCoordinates(connectArray, i, 1, 1, 0);
+						} else {
+							StoreCoordinates(connectArray, i, 0, 1, 0);
+							StoreCoordinates(connectArray, i, 1, 0, 0);
+						}
+					}
+				}
+			}
+		}
+
+	}
+}
+
+function StoreCoordinates(sA, timepoints, chrchannel, dotID, offset){
+	key = timepoints * 14;
+	index =  returnDotIndex(chrchannel, timepoints, dotID);
+	sA[key+ offset*7 +chrchannel*3 ] =  getResult("x", index);
+	sA[key+ offset*7+chrchannel*3+1] =  getResult("y", index);
+	sA[key+ offset*7+chrchannel*3+2] =  getResult("z", index);
+}
+
+function compare2x2(timepoint){
+	ch0id0 = returnDotIndex(0, timepoint, 0);
+	ch0id1 = returnDotIndex(0, timepoint, 1);
+	ch1id0 = returnDotIndex(1, timepoint, 0);
+	ch1id1 = returnDotIndex(1, timepoint, 1);
+	combi01 = returnDistance(ch0id0,  ch1id0) + returnDistance(ch0id1,  ch1id1);
+	combi02 = returnDistance(ch0id0,  ch1id1) + returnDistance(ch0id1,  ch1id0);
+	flag =0;
+	if (combi01 < combi02 ) flag =1;
+	else flag =2;
+	return flag;
+}
+
+function compare2x1(timepoint){
+	ch0dots = returnDotNumber(0, timepoint);
+	ch1dots = returnDotNumber(1, timepoint);
+	ch0id0 = returnDotIndex(0, timepoint, 0);
+	ch1id0 = returnDotIndex(1, timepoint, 0);
+	flag =0;
+	if (ch0dots ==1) {
+		ch1id1 = returnDotIndex(1, timepoint, 1);
+		combi01 = returnDistance(ch0id0,  ch1id0) ;
+		combi02 = returnDistance(ch0id0,  ch1id1) ;
+		if (combi01<combi02) flag= 1;
+		else flag = 2;
+	} else {
+		ch0id1 = returnDotIndex(0, timepoint, 1);
+		combi01 = returnDistance(ch0id0,  ch1id0) ;
+		combi02 = returnDistance(ch0id1,  ch1id0) ;
+		if (combi01<combi02) flag= 1;
+		else flag = 3;
+	}
+	return flag;
+}
+
+function returnDistance(index1, index2){
+	sqd = pow(getResult("x", index1) - getResult("x", index2), 2) 
+		+ pow(getResult("y", index1) - getResult("y", index2), 2) 
+		+ pow(getResult("z", index1) - getResult("z", index2), 2);
+	return pow(sqd, 0.5);
+} 
+ * 
+ * 
+ * 
+ * 
+ */
 
