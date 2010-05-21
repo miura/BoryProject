@@ -65,10 +65,10 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 		if (imp0 == null) return;
 		if (imp0.getStackSize() == 1) return;		
 		if (imp1.getStackSize() == 1) return;
-		SegAndMeasure( imp0, imp1);
+		segAndMeasure( imp0, imp1);
 	}
 	
-	public void SegAndMeasure(ImagePlus imp0, ImagePlus imp1){
+	public void segAndMeasure(ImagePlus imp0, ImagePlus imp1){
 		ImagePlus binimp0 = segmentaitonByObjectSize(imp0);
 		ImagePlus binimp1 = segmentaitonByObjectSize(imp1);
 		//binimp0.show();
@@ -77,8 +77,8 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 		if (createComposite) {
 			ImagePlus ch0proj=null;
 			ImagePlus ch1proj=null;
-			ch0proj = CreateZprojTimeSeries(binimp0, imp0.getNSlices(), imp0.getNFrames());
-			ch1proj = CreateZprojTimeSeries(binimp1, imp1.getNSlices(), imp1.getNFrames());
+			ch0proj = createZprojTimeSeries(binimp0, imp0.getNSlices(), imp0.getNFrames());
+			ch1proj = createZprojTimeSeries(binimp1, imp1.getNSlices(), imp1.getNFrames());
 			ImageStack dummy = null;
 			RGBStackMerge rgbm = new RGBStackMerge();
 			ImageStack rgbstack = rgbm.mergeStacks(ch0proj.getWidth(), ch0proj.getHeight(), ch0proj.getStackSize(), ch0proj.getStack(), ch1proj.getStack(), dummy, true);
@@ -90,7 +90,7 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 		measureDots(binimp1);		
 	}
 
-	public ImagePlus CreateZprojTimeSeries(ImagePlus imp, int zframes, int tframes){
+	public ImagePlus createZprojTimeSeries(ImagePlus imp, int zframes, int tframes){
 		ImageStack zprostack = new ImageStack();
 		zprostack = imp.createEmptyStack();
 		ZProjector zpimp = new ZProjector(imp);
@@ -213,12 +213,14 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 		//IJ.log(Integer.toString(imp.getHeight()));
 		ImagePlus imps = null;
 		Duplicator singletime = new Duplicator();
-		ArrayList<Double> coords = new ArrayList<Double>();
-		ArrayList<Integer> paras = new ArrayList<Integer>();
+		ArrayList<Integer> objindex = new ArrayList<Integer>();
+		ArrayList<Float> coords = new ArrayList<Float>();
+		ArrayList<Integer> vols = new ArrayList<Integer>();
+		ArrayList<Float> intdens = new ArrayList<Float>();
 		
 		for (int j=0; j<tframes; j++){
-			coords.clear();
-			paras.clear();
+			//coords.clear();
+			//vols.clear();
 			IJ.log("====frame "+Integer.toString(j)+" ==========");
 			imps = singletime.run(imp, j*zframes+1, j*zframes+zframes); 
 			thr = 128;
@@ -256,10 +258,25 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 				 Cent = "("+Float.toString(tmpArrayC[0])+","+Float.toString(tmpArrayC[1])+","+Float.toString(tmpArrayC[2])+")";
 				 opt = "Object"+Integer.toString(i)+" vol="+Integer.toString(volume)+ "\t "+Cent+" : IntDen"+Float.toString(intden);
 				 IJ.log(opt);
-				 //coords.add(e)
+				 for (int k = 0; k<3; k++) coords.add(tmpArrayC[k]);
+				 vols.add(volume);
+				 intdens.add(intden);
+				 objindex.add(j);
 			 }
+			 
 		} 
-		 //IJ.showMessage("My_Plugin","Hello world!");
+		int[][] intA = new int[objindex.size()][2];
+		float[][] floatA = new float[objindex.size()][7];		
+		
+		for (int i=0; i<objindex.size(); i++){
+			intA[i][0] = objindex.get(i);
+			intA[i][1] = vols.get(i);
+			floatA[i][0] = coords.get(i*3);
+			floatA[i][1] = coords.get(i*3+1);
+			floatA[i][2] = coords.get(i*3+2);
+			floatA[i][6] = intdens.get(i);			
+		}
+		showStatistics("ch0", intA, floatA);
 	}
 	
 	   public void showStatistics(String chnum, int[][] intA, float[][] floatA){
@@ -267,15 +284,17 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 	        rt=new ResultsTable();	        
 	        for (int i=0; i<intA.length; i++){
 	            rt.incrementCounter();
-	            rt.setValue("Volume", i, intA[i][0]);
-	            rt.setValue("IntDen", i, intA[i][1]);
+	            rt.setValue("frame", i, intA[i][0]);
+	            rt.setValue("Volume", i, intA[i][1]);
+	            //rt.setValue("IntDen", i, intA[i][1]);
 	            //rt.setValue("meanint", i, intA[i][2]);
 	            rt.setValue("x", i, floatA[i][0]);
 	            rt.setValue("y", i, floatA[i][1]);
 	            rt.setValue("z", i, floatA[i][2]);
-	            rt.setValue("cx", i, floatA[i][3]);
-	            rt.setValue("cy", i, floatA[i][4]);
-	            rt.setValue("cz", i, floatA[i][5]);	            	            
+	            //rt.setValue("cx", i, floatA[i][3]);
+	            //rt.setValue("cy", i, floatA[i][4]);
+	            //rt.setValue("cz", i, floatA[i][5]);
+	            rt.setValue("Intden", i, floatA[i][6]);
 	        }
 	       
 	        rt.show("Statistics"+chnum);
