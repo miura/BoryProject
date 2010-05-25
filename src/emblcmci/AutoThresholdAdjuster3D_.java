@@ -32,7 +32,7 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 		//ImagePlus imp;
 		//imp = ij.WindowManager.getCurrentImage();
 
-		//copied and modifed from image - color merge... (RGBStackMerge.java)
+		//copied and modified from image - color merge... (RGBStackMerge.java)
 		int[] wList = WindowManager.getIDList();
 		if (wList==null) {
 			IJ.error("bory dot analysis", "No images are open.");
@@ -323,6 +323,13 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 	        rt.show("Statistics"+chnum);     
 
 	    }
+	   //for calculating distance from index
+	   public float returnDistance(int index1, float[][] fch0, int index2, float[][] fch1){
+			float sqd = (float) (Math.pow(fch0[index1][0] - fch1[index2][0], 2) 
+				+ Math.pow(fch0[index1][1] - fch1[index2][1], 2) 
+				+ Math.pow(fch0[index1][2] - fch1[index2][2], 2));
+			return (float) Math.pow(sqd, 0.5);
+		}
 
 }
 
@@ -449,13 +456,9 @@ function compare2x1(timepoint){
 	}
 	return flag;
 }
+*/
 
-function returnDistance(index1, index2){
-	sqd = pow(getResult("x", index1) - getResult("x", index2), 2) 
-		+ pow(getResult("y", index1) - getResult("y", index2), 2) 
-		+ pow(getResult("z", index1) - getResult("z", index2), 2);
-	return pow(sqd, 0.5);
-} 
+/*
  * 
  * 
  * 
