@@ -27,6 +27,8 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 	int maxspotvoxels = 300000000;
 	int minspotvoxels = 3;
 	int maxloops =50;	// maximum loop for optimum threshold searching
+	Vector<Object4D> obj4Dch0; //trial using extended class 100525
+	Vector<Object4D> obj4Dch1; //trial using extended class 100525	
 	
 	public void run(String arg) {
 		//ImagePlus imp;
@@ -74,7 +76,8 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 		ImagePlus binimp1 = segmentaitonByObjectSize(imp1);
 		//binimp0.show();
 		//binimp1.show();
-		
+		obj4Dch0 = new Vector<Object4D>();
+		obj4Dch1 = new Vector<Object4D>();		
 		if (createComposite) {
 			ImagePlus ch0proj=null;
 			ImagePlus ch1proj=null;
@@ -300,6 +303,7 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 				 vols.add(volume);
 				 intdens.add(intden);
 				 objindex.add(j);
+				 obj4Dch0.add((Object4D) currObj);	//use object vector to keep detected 3D objects throughout the sequence
 			 }
 			 
 		} 
