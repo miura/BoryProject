@@ -6,6 +6,8 @@ package emblcmci;
  *   
  */
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.TreeMap;
 import java.util.Vector;
 import ij.plugin.Duplicator;
 import ij.*;
@@ -29,7 +31,8 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 	int maxloops =50;	// maximum loop for optimum threshold searching
 	Vector<Object4D> obj4Dch0; //use extended class Object4D 100525 Might be better with ArrayList
 	Vector<Object4D> obj4Dch1; //use extended class Object4D 100525
-	Object4D obj4d;	//Object3D added with timepoint and channel number fields. 
+	Object4D obj4d;	//Object3D added with time point and channel number fields. 
+	HashMap<Object4D, Object4D> linked; //dot linking results, <ch0, ch1>  
 	
 	public void run(String arg) {
 		//ImagePlus imp;
@@ -97,14 +100,14 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 		ArrayList<Integer> vols = new ArrayList<Integer>();
 		ArrayList<Float> intdens = new ArrayList<Float>();
 		
-		int ch0objnum = measureDots(binimp0, "Ch0", objindex, coords, vols, intdens);
+		int ch0objnum = measureDots(binimp0, "Ch0", objindex, coords, vols, intdens, obj4Dch0);
 		
 		int[][] intCh0A = new int[ch0objnum][2];
 		float[][] floatCh0A = new float[ch0objnum][7];		
 		ConvListToArray(intCh0A, floatCh0A,  objindex, coords, vols, intdens, 0);
 		showStatistics("ch0", intCh0A, floatCh0A);
 
-		int ch1objnum = measureDots(binimp1, "Ch1", objindex, coords, vols, intdens);
+		int ch1objnum = measureDots(binimp1, "Ch1", objindex, coords, vols, intdens, obj4Dch1);
 		ch1objnum -= ch0objnum;
 
 		int[][] intCh1A = new int[ch1objnum][2];
@@ -255,7 +258,8 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 			ArrayList<Integer> objindex, 
 			ArrayList<Float> coords, 
 			ArrayList<Integer> vols, 
-			ArrayList<Float> intdens) {	
+			ArrayList<Float> intdens,
+			Vector<Object4D> obj4dv) {
 		
 		int listsize = objindex.size();
 		int nSlices = imp.getStackSize();
@@ -297,7 +301,8 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 			 float intden, meanint;
 			 String opt ="";
 			 String Cent ="";
-			 String CentM ="";		 
+			 String CentM ="";
+			 //TODO sort obj in size-decending order. should implement compare with obj.get(i).size
 			 for (int i=0; i<nobj; i++){
 				 opt ="";
 				 Object3D currObj=obj.get(i);
@@ -313,9 +318,9 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 				 vols.add(volume);
 				 intdens.add(intden);
 				 objindex.add(j);
-				 obj4d = new Object4D(currObj.size, j);
-				 obj4d.CopyObj3Dto4D(currObj, j);
-				 obj4Dch0.add(obj4d);	//trial using a object vector to keep detected 3D objects throughout the sequence
+				 obj4d = new Object4D(currObj.size, j, chnum);
+				 obj4d.CopyObj3Dto4D(currObj, j, chnum);
+				 obj4dv.add(obj4d);	//trial using a object vector to keep detected 3D objects throughout the sequence
 			 }
 			 
 		} 
@@ -346,6 +351,68 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 				+ Math.pow(fch0[index1][2] - fch1[index2][2], 2));
 			return (float) Math.pow(sqd, 0.5);
 		}
+
+	   // returns number of dots at single time point
+	   int returnDotNumber(Vector<Object4D> obj4D, int timepoint){
+		   int counter =0;
+		   for (int i=0; i<obj4D.size(); i++){
+			   if (obj4D.get(i).timepoint == timepoint) counter++;
+		   }
+		   return counter;
+	   }
+	   // this works only when there is one dot per timepoint
+	   Object4D returnObj4D(Vector<Object4D> obj4D, String chnum, int tpoint){
+		   Object4D retobj4D = null;
+		   for (int i=0; i<obj4D.size(); i++){
+			   if ((obj4D.get(i).timepoint == tpoint) 
+				   && (obj4D.get(i).chnum.equals(chnum))){
+				   retobj4D = obj4D.get(i);
+			   }
+		   }		   
+		   return retobj4D;
+	   }
+	   
+	   void dotLinker(Vector<Object4D> obj4Dch0,  Vector<Object4D> obj4Dch1, int tframes){
+		   int ch0dots, ch1dots;
+		   Object4D currobj4Dch0,currobj4Dch1; 
+		   for (int i = 0; i < tframes; i++){
+			   ch0dots = returnDotNumber(obj4Dch0, i);
+			   ch1dots = returnDotNumber(obj4Dch1, i);
+			   if ((ch0dots != 0) && (ch1dots != 0)) {
+				   if ((ch0dots == 1) && (ch1dots == 1)) {
+					   currobj4Dch0 = returnObj4D(obj4Dch0, "ch0", i);
+					   currobj4Dch1 = returnObj4D(obj4Dch1, "ch1", i);
+					   linked.put(currobj4Dch0, currobj4Dch1);
+				   } else {
+					   if ((ch0dots >= 2) && (ch1dots >= 2)) { //both channels contain multiple dots
+						   
+					   } else {	// one channel contains only one dots
+						   
+					   }
+				   }
+			   }
+		   }
+	   }
+	   
+	   //return object4D with largest among dots in a time point
+	   Object4D returnLargest(Vector<Object4D> obj4Dv, int timepoint){
+		   TreeMap sort = new TreeMap();
+		   
+		  // for (int i = 0; i < )
+		   return obj4Dv.get(0); //dummy
+	   }
+	   //return object4D with 2nd largest among dots in a time point
+	   Object4D return2ndLargest(Vector<Object4D> obj4Dv, int timepoint, int dotnum){
+		   TreeMap sort = new TreeMap();
+		   Object4D curobj4D = null;
+		   int counter = 0;
+		   int i = 0;
+		   while (counter<dotnum){
+			   
+			   counter++;
+		   }
+		   return curobj4D;
+	   }	   
 
 }
 
