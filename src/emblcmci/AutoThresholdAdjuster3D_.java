@@ -27,8 +27,9 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 	int maxspotvoxels = 300000000;
 	int minspotvoxels = 3;
 	int maxloops =50;	// maximum loop for optimum threshold searching
-	Vector<Object4D> obj4Dch0; //trial using extended class 100525
-	Vector<Object4D> obj4Dch1; //trial using extended class 100525	
+	Vector<Object4D> obj4Dch0; //use extended class Object4D 100525 Might be better with ArrayList
+	Vector<Object4D> obj4Dch1; //use extended class Object4D 100525
+	Object4D obj4d;	//Object3D added with timepoint and channel number fields. 
 	
 	public void run(String arg) {
 		//ImagePlus imp;
@@ -110,6 +111,15 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 		float[][] floatCh1A = new float[ch1objnum][7];		
 		ConvListToArray(intCh1A, floatCh1A,  objindex, coords, vols, intdens, ch0objnum);
 		showStatistics("ch1", intCh1A, floatCh1A);
+		
+		//testing object4D 
+		for (int i = 0; i < obj4Dch0.size(); i++){
+			String prnt = "Object4D: t=" 
+				+ Integer.toString(obj4Dch0.get(i).timepoint) 
+				+ " volume=" 
+				+ Integer.toString(obj4Dch0.get(i).size);
+			IJ.log(prnt);
+		}
 		
 		//analysis part
 		
@@ -303,7 +313,9 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 				 vols.add(volume);
 				 intdens.add(intden);
 				 objindex.add(j);
-				 obj4Dch0.add((Object4D) currObj);	//use object vector to keep detected 3D objects throughout the sequence
+				 obj4d = new Object4D(currObj.size, j);
+				 obj4d.CopyObj3Dto4D(currObj, j);
+				 obj4Dch0.add(obj4d);	//trial using a object vector to keep detected 3D objects throughout the sequence
 			 }
 			 
 		} 
