@@ -8,7 +8,6 @@ package emblcmci;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.TreeMap;
 import java.util.Vector;
 import ij.plugin.Duplicator;
 import ij.*;
@@ -96,25 +95,17 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 			
 		}
 		//measurement part
-		ArrayList<Integer> objindex = new ArrayList<Integer>();
-		ArrayList<Float> coords = new ArrayList<Float>();
-		ArrayList<Integer> vols = new ArrayList<Integer>();
-		ArrayList<Float> intdens = new ArrayList<Float>();
 		
-		int ch0objnum = measureDots(binimp0, "Ch0", objindex, coords, vols, intdens, obj4Dch0);
+		int ch0objnum = measureDots(binimp0, "Ch0", obj4Dch0);
 		
-		int[][] intCh0A = new int[ch0objnum][2];
-		float[][] floatCh0A = new float[ch0objnum][7];		
-		ConvListToArray(intCh0A, floatCh0A,  objindex, coords, vols, intdens, 0);
+		//ConvListToArray(intCh0A, floatCh0A,  objindex, coords, vols, intdens, 0);
 		//showStatistics("ch0", intCh0A, floatCh0A);
 		showStatistics(obj4Dch0);
 		
-		int ch1objnum = measureDots(binimp1, "Ch1", objindex, coords, vols, intdens, obj4Dch1);
+		int ch1objnum = measureDots(binimp1, "Ch1", obj4Dch1);
 		ch1objnum -= ch0objnum;
-
-		int[][] intCh1A = new int[ch1objnum][2];
-		float[][] floatCh1A = new float[ch1objnum][7];		
-		ConvListToArray(intCh1A, floatCh1A,  objindex, coords, vols, intdens, ch0objnum);
+	
+		//ConvListToArray(intCh1A, floatCh1A,  objindex, coords, vols, intdens, ch0objnum);
 		//showStatistics("ch1", intCh1A, floatCh1A);
 		showStatistics(obj4Dch1);
 		
@@ -130,6 +121,7 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 		//analysis part
 		
 	}
+	//this will probably not be used anymore, since object4D is successful 100527
 	public void ConvListToArray(int[][] intA, float[][] floatA, 
 			ArrayList<Integer> objindex, 
 			ArrayList<Float> coords, 
@@ -258,13 +250,8 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 	}
 	
 	public int measureDots(ImagePlus imp, String chnum, 
-			ArrayList<Integer> objindex, 
-			ArrayList<Float> coords, 
-			ArrayList<Integer> vols, 
-			ArrayList<Float> intdens,
 			Vector<Object4D> obj4dv) {
 		
-		int listsize = objindex.size();
 		int nSlices = imp.getStackSize();
 		if (nSlices ==1) return -1;
 		int zframes =8; // TODO
@@ -274,65 +261,57 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 		//IJ.log(Integer.toString(imp.getHeight()));
 		ImagePlus imps = null;
 		Duplicator singletime = new Duplicator();
-
+		
+		thr = 128;
+		minSize = 3;
+		maxSize = 1000;
+		excludeOnEdges = false;
+		redirect = false;
 		
 		for (int j=0; j<tframes; j++){
 			//coords.clear();
 			//vols.clear();
 			IJ.log("====frame "+Integer.toString(j)+" ==========");
 			imps = singletime.run(imp, j*zframes+1, j*zframes+zframes); 
-			thr = 128;
-			minSize = 3;
-			maxSize = 1000;
-			excludeOnEdges = false;
-			redirect = false;
 			Counter3D OC=new Counter3D(imps, thr, minSize, maxSize, excludeOnEdges, redirect);
 			newRT = true;
 			 //OC.showStatistics(newRT);
 			 //if (!Counter3D.getObjects) Counter3DgetObjects();
-			float[][] centroidList=OC.getCentroidList();
-			for (int i=0; i<centroidList.length; i++) {
-				 float cx = centroidList[i][0];
-				 float cy = centroidList[i][1];
-				 float cz = centroidList[i][2];
-				 //IJ.log(Float.toString(cx)+", "+Float.toString(cy)+", "+Float.toString(cz)+", ");
-			 }
+
 			 Vector<Object3D> obj = OC.getObjectsList();
 			 int nobj = obj.size();
 			 IJ.log(Integer.toString(nobj));
-			 int volume; 
-			 float intden, meanint;
-			 String opt ="";
-			 String Cent ="";
-			 String CentM ="";
 			 //sort obj in size-decending order. should implement compare with obj.get(i).size
 			 Comparers comparers = new Comparers();
 			 Collections.sort(obj, comparers.getComparerBysize3D());
-			 for (int i=0; i<nobj; i++){
-				 opt ="";
-				 Object3D currObj=obj.get(i);
-				 volume = currObj.size;
-				 intden = currObj.int_dens;
-				 meanint = currObj.mean_gray;
-				 float[] tmpArrayC=currObj.centroid;
-				 float[] tmpArrayM=currObj.c_mass;
-				 Cent = "("+Float.toString(tmpArrayC[0])+","+Float.toString(tmpArrayC[1])+","+Float.toString(tmpArrayC[2])+")";
-				 opt = "Object"+Integer.toString(i)+" vol="+Integer.toString(volume)+ "\t "+Cent+" : IntDen"+Float.toString(intden);
-				 IJ.log(opt);
-				 for (int k = 0; k<3; k++) coords.add(tmpArrayC[k]);
-				 vols.add(volume);
-				 intdens.add(intden);
-				 objindex.add(j);
-				 obj4d = new Object4D(currObj.size, j, chnum);
-				 obj4d.CopyObj3Dto4D(currObj, j, chnum);
-				 obj4dv.add(obj4d);	//trial using a object vector to keep detected 3D objects throughout the sequence
+			 for (int i=0; i<nobj; i++){			 
+				 Object3D cObj=obj.get(i);
+				 IJ.log(LogObject3D(cObj, i));
+				 obj4d = new Object4D(cObj.size, j, chnum);
+				 obj4d.CopyObj3Dto4D(cObj, j, chnum);
+				 obj4dv.add(obj4d);
 			 }
 			 
 		} 
 		
-		return objindex.size();
+		return obj4dv.size();
 	}
 	
+	String LogObject3D(Object3D cObj, int i){
+		 String opt ="";
+		 String Cent ="";
+		 Cent = "("
+			 +Float.toString(cObj.centroid[0])+","
+		 	 +Float.toString(cObj.centroid[1])+","
+		 	 +Float.toString(cObj.centroid[2])
+		 	 +")";
+		 opt = "Object"+Integer.toString(i)
+		 	+" vol="+Integer.toString(cObj.size) 
+		 	+ "\t "+Cent
+		 	+" : IntDen"+Float.toString(cObj.int_dens);
+		 return opt;
+	}
+		//this method is not used from 100527
 	   public void showStatistics(String chnum, int[][] intA, float[][] floatA){
 	        ResultsTable rt;        
 	        rt=new ResultsTable();	        
@@ -365,9 +344,11 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 	    }
 	   //for calculating distance from index
 	   public float returnDistance(int index1, float[][] fch0, int index2, float[][] fch1){
-			float sqd = (float) (Math.pow(fch0[index1][0] - fch1[index2][0], 2) 
+			float sqd = (float) (
+				Math.pow(fch0[index1][0] - fch1[index2][0], 2) 
 				+ Math.pow(fch0[index1][1] - fch1[index2][1], 2) 
-				+ Math.pow(fch0[index1][2] - fch1[index2][2], 2));
+				+ Math.pow(fch0[index1][2] - fch1[index2][2], 2)
+				);
 			return (float) Math.pow(sqd, 0.5);
 		}
 
