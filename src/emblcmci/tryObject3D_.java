@@ -43,7 +43,9 @@ public class tryObject3D_ implements PlugIn {
 		 IJ.log("after sorting ==========");
 		 for(int i = 0; i < obj4Dv.size(); i++){
 			 IJ.log(Integer.toString(obj4Dv.get(i).size));
-		 }		 
+		 }
+
+		 
 	}
 
 }

@@ -2,7 +2,7 @@ package emblcmci;
 /*
  * @author Kota Miura
  * @author CMCI, EMBL
- * extending Fabrices' Object3D
+ * extending Fabrices' Object3D.java
  */
 import Utilities.Object3D;
 
@@ -79,6 +79,9 @@ public class Object4D extends Object3D{
 	public void CopyObj3Dto4D(Object3D obj3D, int timepoint, String chnum, int dotID){
 		CopyObj3Dto4D(obj3D, timepoint, chnum);
 		this.dotID = dotID;
-	}	
+	}
+	public void SetDotID(int dotID){
+		this.dotID = dotID;
+	}
 	
 }

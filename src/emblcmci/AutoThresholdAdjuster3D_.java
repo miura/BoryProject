@@ -34,7 +34,7 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 	Vector<Object4D> obj4Dch0; //use extended class Object4D 100525 Might be better with ArrayList
 	Vector<Object4D> obj4Dch1; //use extended class Object4D 100525
 	Object4D obj4d;	//Object3D added with time point and channel number fields. 
-	HashMap<Object4D, Object4D> linked; //dot linking results, <ch0, ch1>  
+	// HashMap<Object4D, Object4D> linked; //dot linking results, <ch0, ch1>  
 	
 	public void run(String arg) {
 		//ImagePlus imp;
@@ -122,7 +122,38 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 		
 		//analysis part
 		
+		//test storing into linked array
+		TestStoringObj4Darray(obj4Dch0, imp0.getNFrames());
 	}
+	
+	// test during coding
+	void TestStoringObj4Darray(Vector<Object4D> obj4dv, int duration){
+		 Object4D[][] linked = new Object4D[duration][4];
+
+		 int stepper;
+		 for(int i = 0; i < obj4dv.size(); i++){
+			stepper = 0;
+			while ((linked[obj4dv.get(i).timepoint][stepper]!=null) && (stepper<3)) {
+				stepper++;
+			}
+			linked[obj4dv.get(i).timepoint][stepper] =obj4dv.get(i);
+		 }
+		
+		 //testing the content of linked array
+		 for (int j = 0; j < linked.length; j++){
+			 IJ.log("tframe = "+Integer.toString(j));
+			 for (int i = 0; i< 4; i++){
+				 if (linked[j][i] == null){
+					 IJ.log("...");					 
+				 } else {
+				 IJ.log("... ID = " + Integer.toString(i)
+						 + " ...Volume = " + Integer.toString(linked[j][i].size));
+				 }
+			 }
+		 }
+
+	}
+	
 	//this will probably not be used anymore, since object4D is successful 100527
 	public void ConvListToArray(int[][] intA, float[][] floatA, 
 			ArrayList<Integer> objindex, 
@@ -288,8 +319,8 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 			 for (int i=0; i<nobj; i++){			 
 				 Object3D cObj=obj.get(i);
 				 IJ.log(LogObject3D(cObj, i));
-				 obj4d = new Object4D(cObj.size, j, chnum);
-				 obj4d.CopyObj3Dto4D(cObj, j, chnum);
+				 obj4d = new Object4D(cObj.size);
+				 obj4d.CopyObj3Dto4D(cObj, j, chnum, i+1); //adds additional 4d parameters, timepoint, channel & dotID 
 				 obj4dv.add(obj4d);
 			 }
 			 
@@ -361,29 +392,36 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 		   }
 		   return counter;
 	   }
-	   // this works only when there is one dot per timepoint
-	   Object4D returnObj4D(Vector<Object4D> obj4D, String chnum, int tpoint){
+	   // dotID could only be 1 or 2 (0 does not exist)
+	   Object4D returnObj4D(Vector<Object4D> obj4Dv, int tpoint, int dotID){
 		   Object4D retobj4D = null;
-		   for (int i=0; i<obj4D.size(); i++){
-			   if ((obj4D.get(i).timepoint == tpoint) 
-				   && (obj4D.get(i).chnum.equals(chnum))){
-				   retobj4D = obj4D.get(i);
+		   for (int i=0; i<obj4Dv.size(); i++){
+			   if ((obj4Dv.get(i).timepoint == tpoint) 
+				  && (obj4Dv.get(i).dotID == dotID)){
+				  
+				   retobj4D = obj4Dv.get(i);
 			   }
 		   }		   
 		   return retobj4D;
 	   }
-	   
-	   void dotLinker(Vector<Object4D> obj4Dch0,  Vector<Object4D> obj4Dch1, int tframes){
+	   /* Link objects in two channels
+	    * 
+	    * assumes that there is only one or two pairs.
+	    * Picks up largest and/or nearest particle first.  
+	    */
+	   Object4D[][] dotLinker(Vector<Object4D> obj4Dch0,  Vector<Object4D> obj4Dch1, int tframes){
 		   int ch0dots, ch1dots;
+		   Object4D[][] linked = new Object4D[tframes][4]; 
 		   Object4D currobj4Dch0,currobj4Dch1; 
 		   for (int i = 0; i < tframes; i++){
 			   ch0dots = returnDotNumber(obj4Dch0, i);
 			   ch1dots = returnDotNumber(obj4Dch1, i);
 			   if ((ch0dots != 0) && (ch1dots != 0)) {
 				   if ((ch0dots == 1) && (ch1dots == 1)) {
-					   currobj4Dch0 = returnObj4D(obj4Dch0, "ch0", i);
-					   currobj4Dch1 = returnObj4D(obj4Dch1, "ch1", i);
-					   linked.put(currobj4Dch0, currobj4Dch1);
+					   currobj4Dch0 = returnObj4D(obj4Dch0, i, 1);	//only one dot so dotID = 1
+					   currobj4Dch1 = returnObj4D(obj4Dch1, i, 1);
+					   linked[i][0] = currobj4Dch0;
+					   linked[i][1] = currobj4Dch1;
 				   } else {
 					   if ((ch0dots >= 2) && (ch1dots >= 2)) { //both channels contain multiple dots
 						   
@@ -393,6 +431,7 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 				   }
 			   }
 		   }
+		   return linked;
 	   }
 	   
 
