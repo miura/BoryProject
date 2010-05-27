@@ -1,5 +1,7 @@
 package emblcmci;
 
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Vector;
 
 import Utilities.Counter3D;
@@ -13,7 +15,7 @@ public class tryObject3D_ implements PlugIn {
 	ImagePlus imp;
 	int thr, minSize, maxSize, dotSize, fontSize;
 	boolean excludeOnEdges, showObj, showSurf, showCentro, showCOM, showNb, whiteNb, newRT, showStat, showMaskedImg, closeImg, showSummary, redirect;
-	Vector<Object4D> obj4D;
+	Vector<Object4D> obj4Dv;
 	
 	public void run(String arg) {
 		 imp = ij.WindowManager.getCurrentImage();
@@ -26,7 +28,22 @@ public class tryObject3D_ implements PlugIn {
 		 newRT = true;
 		 OC.showStatistics(newRT);
 		//IJ.showMessage("test3D_Plugin","Hello world 3!");
-		 obj4D=new Vector<Object4D>();
-		 
+		 Vector<Object3D> obj3Dv = OC.getObjectsList();
+		 obj4Dv = new Vector<Object4D>();
+		 for (int i = 0; i < obj3Dv.size(); i++) {
+			 Object4D obj4d = new Object4D(obj3Dv.get(i).size);
+			 obj4d.CopyObj3Dto4D(obj3Dv.get(i), 1, "ch1");
+			 obj4Dv.add(obj4d);
+		 }
+		 for(int i = 0; i < obj4Dv.size(); i++){
+			 IJ.log(Integer.toString(obj4Dv.get(i).size));
+		 }
+		 Comparers comparers = new Comparers();
+		 Collections.sort(obj4Dv, comparers.getComparerBysize());
+		 IJ.log("after sorting ==========");
+		 for(int i = 0; i < obj4Dv.size(); i++){
+			 IJ.log(Integer.toString(obj4Dv.get(i).size));
+		 }		 
 	}
+
 }

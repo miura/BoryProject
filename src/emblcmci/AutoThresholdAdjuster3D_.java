@@ -6,6 +6,7 @@ package emblcmci;
  *   
  */
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.TreeMap;
 import java.util.Vector;
@@ -105,15 +106,17 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 		int[][] intCh0A = new int[ch0objnum][2];
 		float[][] floatCh0A = new float[ch0objnum][7];		
 		ConvListToArray(intCh0A, floatCh0A,  objindex, coords, vols, intdens, 0);
-		showStatistics("ch0", intCh0A, floatCh0A);
-
+		//showStatistics("ch0", intCh0A, floatCh0A);
+		showStatistics(obj4Dch0);
+		
 		int ch1objnum = measureDots(binimp1, "Ch1", objindex, coords, vols, intdens, obj4Dch1);
 		ch1objnum -= ch0objnum;
 
 		int[][] intCh1A = new int[ch1objnum][2];
 		float[][] floatCh1A = new float[ch1objnum][7];		
 		ConvListToArray(intCh1A, floatCh1A,  objindex, coords, vols, intdens, ch0objnum);
-		showStatistics("ch1", intCh1A, floatCh1A);
+		//showStatistics("ch1", intCh1A, floatCh1A);
+		showStatistics(obj4Dch1);
 		
 		//testing object4D 
 		for (int i = 0; i < obj4Dch0.size(); i++){
@@ -302,7 +305,9 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 			 String opt ="";
 			 String Cent ="";
 			 String CentM ="";
-			 //TODO sort obj in size-decending order. should implement compare with obj.get(i).size
+			 //sort obj in size-decending order. should implement compare with obj.get(i).size
+			 Comparers comparers = new Comparers();
+			 Collections.sort(obj, comparers.getComparerBysize3D());
 			 for (int i=0; i<nobj; i++){
 				 opt ="";
 				 Object3D currObj=obj.get(i);
@@ -341,8 +346,22 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 	            rt.setValue("Intden", i, floatA[i][6]);
 	        }
 	       
-	        rt.show("Statistics"+chnum);     
-
+	        rt.show("Statistics_"+chnum);     
+	    }
+	   public void showStatistics(Vector<Object4D> obj4Dv){
+	        ResultsTable rt;        
+	        rt=new ResultsTable();	        
+	        for (int i=0; i<obj4Dv.size(); i++){
+	            rt.incrementCounter();
+	            rt.setValue("frame", i, obj4Dv.get(i).timepoint);
+	            rt.setValue("Volume", i, obj4Dv.get(i).size);
+	            rt.setValue("x", i, obj4Dv.get(i).centroid[0]);
+	            rt.setValue("y", i, obj4Dv.get(i).centroid[1]);
+	            rt.setValue("z", i, obj4Dv.get(i).centroid[2]);
+	            rt.setValue("Intden", i, obj4Dv.get(i).int_dens);
+	        }
+	       
+	        rt.show("Statistics_"+obj4Dv.get(0).chnum);     
 	    }
 	   //for calculating distance from index
 	   public float returnDistance(int index1, float[][] fch0, int index2, float[][] fch1){
@@ -394,25 +413,6 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 		   }
 	   }
 	   
-	   //return object4D with largest among dots in a time point
-	   Object4D returnLargest(Vector<Object4D> obj4Dv, int timepoint){
-		   TreeMap sort = new TreeMap();
-		   
-		  // for (int i = 0; i < )
-		   return obj4Dv.get(0); //dummy
-	   }
-	   //return object4D with 2nd largest among dots in a time point
-	   Object4D return2ndLargest(Vector<Object4D> obj4Dv, int timepoint, int dotnum){
-		   TreeMap sort = new TreeMap();
-		   Object4D curobj4D = null;
-		   int counter = 0;
-		   int i = 0;
-		   while (counter<dotnum){
-			   
-			   counter++;
-		   }
-		   return curobj4D;
-	   }	   
 
 }
 
