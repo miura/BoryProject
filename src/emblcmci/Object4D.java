@@ -12,22 +12,34 @@ public class Object4D extends Object3D{
 	int timepoint;
 	// adds channel name field to Object3D
 	String chnum;
+	// ID of dots within a time frame. Starts from 1 (0 will be the initial value)
+	int dotID;
 	
 	public Object4D(int size) {
 		super(size);
-		timepoint = 0;
-		chnum = "ch";
+		this.timepoint = 0;
+		this.chnum = "ch";
+		this.dotID = 0;
 	}
 	public Object4D(int size, int timepoint) {
 		super(size);
 		this.timepoint = timepoint;
 		this.chnum = "ch";
+		this.dotID = 0;
 	}
 	
 	public Object4D(int size, int timepoint, String chnum) {
 		super(size);
 		this.timepoint = timepoint;
 		this.chnum = chnum;
+		this.dotID = 0;
+	}
+	
+	public Object4D(int size, int timepoint, String chnum, int dotID) {
+		super(size);
+		this.timepoint = timepoint;
+		this.chnum = chnum;
+		this.dotID = dotID;
 	}
 	
 	public void CopyObj3Dto4D(Object3D obj3D){
@@ -63,7 +75,10 @@ public class Object4D extends Object3D{
 	public void CopyObj3Dto4D(Object3D obj3D, int timepoint, String chnum){
 		CopyObj3Dto4D(obj3D, timepoint);
 		this.chnum = chnum;
-		
 	}
+	public void CopyObj3Dto4D(Object3D obj3D, int timepoint, String chnum, int dotID){
+		CopyObj3Dto4D(obj3D, timepoint, chnum);
+		this.dotID = dotID;
+	}	
 	
 }
