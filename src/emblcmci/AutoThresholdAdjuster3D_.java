@@ -7,8 +7,10 @@ package emblcmci;
  */
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Vector;
+
 import ij.plugin.Duplicator;
 import ij.*;
 import Utilities.Counter3D;
@@ -282,8 +284,7 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 			 int nobj = obj.size();
 			 IJ.log(Integer.toString(nobj));
 			 //sort obj in size-decending order. should implement compare with obj.get(i).size
-			 Comparers comparers = new Comparers();
-			 Collections.sort(obj, comparers.getComparerBysize3D());
+			 Collections.sort(obj,  new ComparerBysize3D(ComparerBysize3D.DESC));
 			 for (int i=0; i<nobj; i++){			 
 				 Object3D cObj=obj.get(i);
 				 IJ.log(LogObject3D(cObj, i));
@@ -396,6 +397,34 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 	   
 
 }
+
+//for sorting Object3D Vector, descending order by size (volume)
+class ComparerBysize3D implements Comparator<Object3D> {
+	public static final int ASC = 1;
+	public static final int DESC = -1;
+	private int sort = ASC;
+	
+	public ComparerBysize3D(){
+	}
+	public ComparerBysize3D(int sort){
+		this.sort = sort;
+	}	
+    public int compare(Object3D o1, Object3D o2) {
+    	
+        Object3D obj3d1 = (Object3D) o1;
+        Object3D obj3d2 = (Object3D) o2;
+        int i = 0;
+        if (obj3d1.size < obj3d2.size) 
+            i = -1*sort;
+        if (obj3d1.size == obj3d2.size)
+            i = 0;
+        if (obj3d1.size > obj3d2.size)
+            i = 1*sort;
+        return i;
+    }
+}
+
+
 
 /*
  * macro "connect dots in different channels"{

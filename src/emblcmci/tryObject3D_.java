@@ -38,12 +38,31 @@ public class tryObject3D_ implements PlugIn {
 		 for(int i = 0; i < obj4Dv.size(); i++){
 			 IJ.log(Integer.toString(obj4Dv.get(i).size));
 		 }
-		 Comparers comparers = new Comparers();
-		 Collections.sort(obj4Dv, comparers.getComparerBysize());
+		 ComparerBysize4D comparers = new ComparerBysize4D();
+		 Collections.sort(obj4Dv, comparers);
 		 IJ.log("after sorting ==========");
 		 for(int i = 0; i < obj4Dv.size(); i++){
 			 IJ.log(Integer.toString(obj4Dv.get(i).size));
 		 }		 
 	}
 
+}
+
+class ComparerBysize4D implements Comparator<Object4D> {
+	
+	public ComparerBysize4D(){
+	}
+	
+    public int compare(Object4D o1, Object4D o2) {
+        Object4D obj4d1 = (Object4D) o1;
+        Object4D obj4d2 = (Object4D) o2;
+        int i = 0;
+        if (obj4d1.size > obj4d2.size) 
+            i = -1;
+        if (obj4d1.size == obj4d2.size)
+            i = 0;
+        if (obj4d1.size < obj4d2.size)
+            i = 1;
+        return i;
+    }
 }
