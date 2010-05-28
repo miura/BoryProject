@@ -2,13 +2,13 @@ package emblcmci;
 
 /* segmentation of yeast chromosome 
  * use 3D object counter to adjust threshold level of 3D stack. 
- * 
- *   
+ * 3D object counter must be installed in ImageJ
+ * @author Kota Miura  
+ * @ cmci, embl miura@embl.de
  */
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.Vector;
 
 import ij.plugin.Duplicator;
@@ -23,8 +23,7 @@ import ij.process.ImageProcessor;
 
 public class AutoThresholdAdjuster3D_ implements PlugIn {
 
-	private static boolean createComposite = true;
-	
+	private static boolean createComposite = true;	
 	int thr, minSize, maxSize, dotSize, fontSize;
 	boolean excludeOnEdges, showObj, showSurf, showCentro, showCOM, showNb, whiteNb, newRT, showStat, showMaskedImg, closeImg, showSummary, redirect;
 
@@ -35,6 +34,9 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 	Vector<Object4D> obj4Dch1; //use extended class Object4D 100525
 	Object4D obj4d;	//Object3D added with time point and channel number fields. 
 	// HashMap<Object4D, Object4D> linked; //dot linking results, <ch0, ch1>  
+	
+	Calibration cal, calkeep;
+	double zfactor;
 	
 	public void run(String arg) {
 		//ImagePlus imp;
@@ -74,6 +76,10 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 		if (imp0 == null) return;
 		if (imp0.getStackSize() == 1) return;		
 		if (imp1.getStackSize() == 1) return;
+		cal = imp0.getCalibration();
+		calkeep = cal.copy();
+		zfactor = cal.pixelDepth / cal.pixelWidth;
+		
 		segAndMeasure( imp0, imp1);
 	}
 	
@@ -105,25 +111,27 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 		showStatistics(obj4Dch0);
 		
 		int ch1objnum = measureDots(binimp1, "Ch1", obj4Dch1);
-		ch1objnum -= ch0objnum;
 	
 		//ConvListToArray(intCh1A, floatCh1A,  objindex, coords, vols, intdens, ch0objnum);
 		//showStatistics("ch1", intCh1A, floatCh1A);
 		showStatistics(obj4Dch1);
 		
-		//testing object4D 
-		for (int i = 0; i < obj4Dch0.size(); i++){
-			String prnt = "Object4D: t=" 
-				+ Integer.toString(obj4Dch0.get(i).timepoint) 
-				+ " volume=" 
-				+ Integer.toString(obj4Dch0.get(i).size);
-			IJ.log(prnt);
-		}
+		//analysis 
+		//TestStoringObj4Darray(obj4Dch0, imp0.getNFrames());
 		
-		//analysis part
-		
-		//test storing into linked array
-		TestStoringObj4Darray(obj4Dch0, imp0.getNFrames());
+		Object4D[][] linkedArray = dotLinker(obj4Dch0,  obj4Dch1, imp0.getNFrames());
+		 for (int j = 0; j < linkedArray.length; j++){
+			 IJ.log("tframe = "+Integer.toString(j));
+			 for (int i = 0; i< linkedArray[0].length; i++){
+				 if (linkedArray[j][i] == null){
+					 IJ.log("...");					 
+				 } else {
+				 IJ.log("... ID = " + Integer.toString(i)
+						 + " ... " +  linkedArray[j][i].chnum
+						 + " ...Volume = " + Integer.toString(linkedArray[j][i].size));
+				 }
+			 }
+		 }
 	}
 	
 	// test during coding
@@ -235,6 +243,7 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 	
 	public double ThresholdAdjusterBy3Dobj(ImagePlus imp, int initTh){
 		// somehow this part causes error in osx
+		//TODO implement initial setting more directly
 //		IJ.run("3D OC Options", "volume surface nb_of_obj._voxels nb_of_surf._voxels " +
 //				"integrated_density mean_gray_value std_dev_gray_value median_gray_value " +
 //				"minimum_gray_value maximum_gray_value centroid mean_distance_to_surface " +
@@ -289,8 +298,7 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 		if (nSlices ==1) return -1;
 		int zframes =8; // TODO
 		int tframes = nSlices/zframes;
-		Calibration cal = imp.getCalibration();
-		Calibration calkeep = cal.copy();		
+	
 		//IJ.log(Integer.toString(imp.getHeight()));
 		ImagePlus imps = null;
 		Duplicator singletime = new Duplicator();
@@ -375,11 +383,11 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 	        rt.show("Statistics_"+obj4Dv.get(0).chnum);     
 	    }
 	   //for calculating distance from index
-	   public float returnDistance(int index1, float[][] fch0, int index2, float[][] fch1){
+	   public float returnDistance(Object4D obj1, Object4D obj2){
 			float sqd = (float) (
-				Math.pow(fch0[index1][0] - fch1[index2][0], 2) 
-				+ Math.pow(fch0[index1][1] - fch1[index2][1], 2) 
-				+ Math.pow(fch0[index1][2] - fch1[index2][2], 2)
+				Math.pow(obj1.centroid[0] - obj2.centroid[0], 2) 
+				+ Math.pow(obj1.centroid[1] - obj2.centroid[1], 2) 
+				+ Math.pow(obj1.centroid[2] - obj2.centroid[2], 2)
 				);
 			return (float) Math.pow(sqd, 0.5);
 		}
@@ -404,29 +412,93 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 		   }		   
 		   return retobj4D;
 	   }
+	   
+	   //since there is only one dot in a channel, there could be only one link, with three cases
+	   int Compare2x1(int tpoint){
+		   int flag = 0;
+		   int ch0dots = returnDotNumber(obj4Dch0, tpoint);
+		   int ch1dots = returnDotNumber(obj4Dch1, tpoint);
+		   Object4D ch0id1  = returnObj4D(obj4Dch0, tpoint, 1);
+		   Object4D ch1id1  = returnObj4D(obj4Dch1, tpoint, 1);
+		   if (ch0dots == 1) {
+			   Object4D ch1id2  = returnObj4D(obj4Dch1, tpoint, 2);
+			   float dist1 =returnDistance(ch0id1, ch1id1);
+			   float dist2 =returnDistance(ch0id1, ch1id2);
+			   if (dist1 < dist2) flag = 1;
+			   else flag = 2;
+		   } else {
+			   Object4D ch0id2  = returnObj4D(obj4Dch0, tpoint, 2);
+			   float dist1 =returnDistance(ch0id1, ch1id1);
+			   float dist2 =returnDistance(ch0id2, ch1id1);
+			   if (dist1 < dist2) flag = 1;
+			   else flag = 3;			   
+		   }
+		   return flag;
+	   }
+	   
+	   //only two cases  of combinations
+	   int Compare2x2(int tpoint){
+		   int flag =0;
+		   Object4D ch0id1  = returnObj4D(obj4Dch0, tpoint, 1);
+		   Object4D ch0id2  = returnObj4D(obj4Dch0, tpoint, 2);
+		   Object4D ch1id1  = returnObj4D(obj4Dch1, tpoint, 1);
+		   Object4D ch1id2  = returnObj4D(obj4Dch1, tpoint, 2);
+		   float dist1 = returnDistance(ch0id1, ch1id1) + returnDistance(ch0id2, ch1id2);
+		   float dist2 = returnDistance(ch0id1, ch1id2) + returnDistance(ch0id2, ch1id1);
+		   if (dist1 < dist2) flag = 1;
+		   else flag = 2;		   
+		   return flag;
+	   }
 	   /* Link objects in two channels
 	    * 
 	    * assumes that there is only one or two pairs.
 	    * Picks up largest and/or nearest particle first.  
 	    */
 	   Object4D[][] dotLinker(Vector<Object4D> obj4Dch0,  Vector<Object4D> obj4Dch1, int tframes){
-		   int ch0dots, ch1dots;
 		   Object4D[][] linked = new Object4D[tframes][4]; 
-		   Object4D currobj4Dch0,currobj4Dch1; 
+		   Object4D obj4Dch0id1, obj4Dch1id1;
+		   Object4D obj4Dch0id2, obj4Dch1id2;		   
+		   int flag = 0;
+		   
 		   for (int i = 0; i < tframes; i++){
-			   ch0dots = returnDotNumber(obj4Dch0, i);
-			   ch1dots = returnDotNumber(obj4Dch1, i);
-			   if ((ch0dots != 0) && (ch1dots != 0)) {
-				   if ((ch0dots == 1) && (ch1dots == 1)) {
-					   currobj4Dch0 = returnObj4D(obj4Dch0, i, 1);	//only one dot so dotID = 1
-					   currobj4Dch1 = returnObj4D(obj4Dch1, i, 1);
-					   linked[i][0] = currobj4Dch0;
-					   linked[i][1] = currobj4Dch1;
+			   obj4Dch0id1 = returnObj4D(obj4Dch0, i, 1);	
+			   obj4Dch1id1 = returnObj4D(obj4Dch1, i, 1);
+			   obj4Dch0id2 = returnObj4D(obj4Dch0, i, 2);	
+			   obj4Dch1id2 = returnObj4D(obj4Dch1, i, 2);
+			   if ((obj4Dch0id1 != null) && (obj4Dch1id1 != null)) {
+				   
+				   // 1x1 case
+				   if ((obj4Dch0id2 == null) && (obj4Dch1id2 == null)) { 
+					   linked[i][0] = obj4Dch0id1;
+					   linked[i][1] = obj4Dch1id1;				   
 				   } else {
-					   if ((ch0dots >= 2) && (ch1dots >= 2)) { //both channels contain multiple dots
-						   
+					   if ((obj4Dch0id2 != null) && (obj4Dch1id2 != null)) { //both channels contain multiple dots
+						   flag = Compare2x2(i);
+						   if (flag == 1) {
+							   linked[i][0] = obj4Dch0id1;
+							   linked[i][1] = obj4Dch1id1;
+							   linked[i][2] = obj4Dch0id2;
+							   linked[i][3] = obj4Dch1id2;							   
+						   } else {
+							   linked[i][0] = obj4Dch0id1;
+							   linked[i][1] = obj4Dch1id2;
+							   linked[i][2] = obj4Dch0id2;
+							   linked[i][3] = obj4Dch1id1;
+						   }
 					   } else {	// one channel contains only one dots
-						   
+						   flag = Compare2x1(i);
+						   if (flag == 1) {
+							   linked[i][0] = obj4Dch0id1;
+							   linked[i][1] = obj4Dch1id1;
+						   } else {
+							   if (flag == 2){
+								   linked[i][0] = obj4Dch0id1;
+								   linked[i][1] = obj4Dch1id2;
+							   } else {
+								   linked[i][0] = obj4Dch0id2;
+								   linked[i][1] = obj4Dch1id1;
+							   }
+						   }
 					   }
 				   }
 			   }
