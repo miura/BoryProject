@@ -6,7 +6,7 @@ package emblcmci;
  * @author Kota Miura  
  * @ cmci, embl miura@embl.de
  */
-import java.util.ArrayList;
+
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Vector;
@@ -16,6 +16,7 @@ import ij.*;
 import Utilities.Counter3D;
 import Utilities.Object3D;
 import ij.gui.GenericDialog;
+import ij.gui.Line;
 import ij.measure.Calibration;
 import ij.measure.ResultsTable;
 import ij.plugin.*;
@@ -28,19 +29,17 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 	boolean excludeOnEdges, showObj, showSurf, showCentro, showCOM, showNb, whiteNb, newRT, showStat, showMaskedImg, closeImg, showSummary, redirect;
 
 	int maxspotvoxels = 300000000;
-	int minspotvoxels = 3;
+	int minspotvoxels = 3;	// object volume minimum for segmentation
+	int minspotvoxels_measure = 7;	// object volume minimum for measurement (maybe 7 is too small)	
 	int maxloops =50;	// maximum loop for optimum threshold searching
 	Vector<Object4D> obj4Dch0; //use extended class Object4D 100525 Might be better with ArrayList
 	Vector<Object4D> obj4Dch1; //use extended class Object4D 100525
 	Object4D obj4d;	//Object3D added with time point and channel number fields. 
-	// HashMap<Object4D, Object4D> linked; //dot linking results, <ch0, ch1>  
 	
 	Calibration cal, calkeep;
 	double zfactor;
 	
 	public void run(String arg) {
-		//ImagePlus imp;
-		//imp = ij.WindowManager.getCurrentImage();
 
 		//copied and modified from image - color merge... (RGBStackMerge.java)
 		int[] wList = WindowManager.getIDList();
@@ -89,7 +88,8 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 		//binimp0.show();
 		//binimp1.show();
 		obj4Dch0 = new Vector<Object4D>();
-		obj4Dch1 = new Vector<Object4D>();		
+		obj4Dch1 = new Vector<Object4D>();
+		ImagePlus rgbbin=null;
 		if (createComposite) {
 			ImagePlus ch0proj=null;
 			ImagePlus ch1proj=null;
@@ -98,85 +98,52 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 			ImageStack dummy = null;
 			RGBStackMerge rgbm = new RGBStackMerge();
 			ImageStack rgbstack = rgbm.mergeStacks(ch0proj.getWidth(), ch0proj.getHeight(), ch0proj.getStackSize(), ch0proj.getStack(), ch1proj.getStack(), dummy, true);
-			ImagePlus rgbbin = new ImagePlus("binProjMerged", rgbstack);
+			rgbbin = new ImagePlus("binProjMerged", rgbstack);
 			rgbbin.show();
 			
 		}
 		//measurement part
 		
 		int ch0objnum = measureDots(binimp0, "Ch0", obj4Dch0);
-		
-		//ConvListToArray(intCh0A, floatCh0A,  objindex, coords, vols, intdens, 0);
-		//showStatistics("ch0", intCh0A, floatCh0A);
 		showStatistics(obj4Dch0);
 		
 		int ch1objnum = measureDots(binimp1, "Ch1", obj4Dch1);
-	
-		//ConvListToArray(intCh1A, floatCh1A,  objindex, coords, vols, intdens, ch0objnum);
-		//showStatistics("ch1", intCh1A, floatCh1A);
 		showStatistics(obj4Dch1);
 		
 		//analysis 
-		//TestStoringObj4Darray(obj4Dch0, imp0.getNFrames());
 		
 		Object4D[][] linkedArray = dotLinker(obj4Dch0,  obj4Dch1, imp0.getNFrames());
+		
 		 for (int j = 0; j < linkedArray.length; j++){
 			 IJ.log("tframe = "+Integer.toString(j));
 			 for (int i = 0; i< linkedArray[0].length; i++){
 				 if (linkedArray[j][i] == null){
 					 IJ.log("...");					 
 				 } else {
-				 IJ.log("... ID = " + Integer.toString(i)
+				 IJ.log("... ID = " + Integer.toString(linkedArray[j][i].dotID)
 						 + " ... " +  linkedArray[j][i].chnum
 						 + " ...Volume = " + Integer.toString(linkedArray[j][i].size));
 				 }
 			 }
 		 }
-	}
-	
-	// test during coding
-	void TestStoringObj4Darray(Vector<Object4D> obj4dv, int duration){
-		 Object4D[][] linked = new Object4D[duration][4];
+		 showDistances(linkedArray);
+		 if (rgbbin != null) drawlinks(linkedArray, rgbbin);
 
-		 int stepper;
-		 for(int i = 0; i < obj4dv.size(); i++){
-			stepper = 0;
-			while ((linked[obj4dv.get(i).timepoint][stepper]!=null) && (stepper<3)) {
-				stepper++;
+		 
+	}
+	public void drawlinks(Object4D[][] linked, ImagePlus imp){
+		IJ.run("Colors...", "foreground=white background=white selection=yellow");
+		for(int i = 0;  i < linked.length; i++) {
+			for(int j = 0;  j < linked[0].length; j += 2) {
+				if (linked[i][j] != null){
+					imp.setSlice(linked[i][j].timepoint + 1);
+					imp.setRoi(new Line(linked[i][j].centroid[0], linked[i][j].centroid[1], linked[i][j+1].centroid[0], linked[i][j+1].centroid[1]));
+				}	IJ.run(imp, "Draw", "slice");
 			}
-			linked[obj4dv.get(i).timepoint][stepper] =obj4dv.get(i);
-		 }
-		
-		 //testing the content of linked array
-		 for (int j = 0; j < linked.length; j++){
-			 IJ.log("tframe = "+Integer.toString(j));
-			 for (int i = 0; i< 4; i++){
-				 if (linked[j][i] == null){
-					 IJ.log("...");					 
-				 } else {
-				 IJ.log("... ID = " + Integer.toString(i)
-						 + " ...Volume = " + Integer.toString(linked[j][i].size));
-				 }
-			 }
-		 }
-
-	}
-	
-	//this will probably not be used anymore, since object4D is successful 100527
-	public void ConvListToArray(int[][] intA, float[][] floatA, 
-			ArrayList<Integer> objindex, 
-			ArrayList<Float> coords, 
-			ArrayList<Integer> vols, 
-			ArrayList<Float> intdens, int startindex){
-		for (int i=0; i<intA.length; i++){
-			intA[i][0] = objindex.get(startindex + i);
-			intA[i][1] = vols.get(startindex + i);
-			floatA[i][0] = coords.get(startindex + i * 3);
-			floatA[i][1] = coords.get(startindex + i * 3 + 1);
-			floatA[i][2] = coords.get(startindex + i * 3 + 2);
-			floatA[i][6] = intdens.get(startindex + i);
 		}
+		imp.updateAndDraw();
 	}
+
 
 	public ImagePlus createZprojTimeSeries(ImagePlus imp, int zframes, int tframes){
 		ImageStack zprostack = new ImageStack();
@@ -304,7 +271,7 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 		Duplicator singletime = new Duplicator();
 		
 		thr = 128;
-		minSize = 3;
+		minSize = minspotvoxels_measure;
 		maxSize = 1000;
 		excludeOnEdges = false;
 		redirect = false;
@@ -322,7 +289,7 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 			 Vector<Object3D> obj = OC.getObjectsList();
 			 int nobj = obj.size();
 			 IJ.log(Integer.toString(nobj));
-			 //sort obj in size-decending order. should implement compare with obj.get(i).size
+			 //sort obj in size-descending order. 
 			 Collections.sort(obj,  new ComparerBysize3D(ComparerBysize3D.DESC));
 			 for (int i=0; i<nobj; i++){			 
 				 Object3D cObj=obj.get(i);
@@ -351,22 +318,7 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 		 	+" : IntDen"+Float.toString(cObj.int_dens);
 		 return opt;
 	}
-		//this method is not used from 100527
-	   public void showStatistics(String chnum, int[][] intA, float[][] floatA){
-	        ResultsTable rt;        
-	        rt=new ResultsTable();	        
-	        for (int i=0; i<intA.length; i++){
-	            rt.incrementCounter();
-	            rt.setValue("frame", i, intA[i][0]);
-	            rt.setValue("Volume", i, intA[i][1]);
-	            rt.setValue("x", i, floatA[i][0]);
-	            rt.setValue("y", i, floatA[i][1]);
-	            rt.setValue("z", i, floatA[i][2]);
-	            rt.setValue("Intden", i, floatA[i][6]);
-	        }
-	       
-	        rt.show("Statistics_"+chnum);     
-	    }
+
 	   public void showStatistics(Vector<Object4D> obj4Dv){
 	        ResultsTable rt;        
 	        rt=new ResultsTable();	        
@@ -382,12 +334,40 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 	       
 	        rt.show("Statistics_"+obj4Dv.get(0).chnum);     
 	    }
+	   public void showDistances(Object4D[][] linked){
+	        ResultsTable rt;        
+	        rt=new ResultsTable();
+	        int ct = 0;
+	        for (int i=0; i<linked.length; i++){
+	        	for (int j = 0; j < linked[0].length; j+=2){
+		        	if ((linked[i][j] != null) && (linked[i][j+1] != null)){
+		        		rt.incrementCounter();
+		        		rt.setValue("frame", ct, linked[i][j].timepoint);
+			            rt.setValue("ch0-ch1_dist", ct, returnDistance(linked[i][j], linked[i][j+1]));
+			            float ch0dist = 0;
+			            float ch1dist = 0;
+						if (linked[i][3] != null) {
+			            	ch0dist = returnDistance(linked[i][0], linked[i][2]);
+							ch1dist = returnDistance(linked[i][1], linked[i][3]);
+						}
+			            rt.setValue("ch0-ch0_dist", ct, ch0dist);
+			            rt.setValue("ch1-ch1_dist", ct, ch1dist);
+			            rt.setValue("ch0vol", ct, linked[i][j].size);
+			            rt.setValue("ch1vol", ct, linked[i][j+1].size);
+			            
+			            ct++;
+		        	}
+	        	}
+	        }
+	       
+	        rt.show("Statistics_Distance");     
+	    }
 	   //for calculating distance from index
 	   public float returnDistance(Object4D obj1, Object4D obj2){
 			float sqd = (float) (
 				Math.pow(obj1.centroid[0] - obj2.centroid[0], 2) 
 				+ Math.pow(obj1.centroid[1] - obj2.centroid[1], 2) 
-				+ Math.pow(obj1.centroid[2] - obj2.centroid[2], 2)
+				+ Math.pow((obj1.centroid[2] - obj2.centroid[2])*zfactor, 2)
 				);
 			return (float) Math.pow(sqd, 0.5);
 		}
