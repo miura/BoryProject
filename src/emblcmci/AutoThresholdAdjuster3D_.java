@@ -7,6 +7,7 @@ package emblcmci;
  * @ cmci, embl miura@embl.de
  */
 
+import java.awt.Color;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Vector;
@@ -17,10 +18,13 @@ import Utilities.Counter3D;
 import Utilities.Object3D;
 import ij.gui.GenericDialog;
 import ij.gui.Line;
+import ij.gui.OvalRoi;
 import ij.measure.Calibration;
 import ij.measure.ResultsTable;
 import ij.plugin.*;
+import ij.process.ImageConverter;
 import ij.process.ImageProcessor;
+import ij.process.StackConverter;
 
 public class AutoThresholdAdjuster3D_ implements PlugIn {
 
@@ -29,12 +33,27 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 	boolean excludeOnEdges, showObj, showSurf, showCentro, showCOM, showNb, whiteNb, newRT, showStat, showMaskedImg, closeImg, showSummary, redirect;
 
 	int maxspotvoxels = 300000000;
-	int minspotvoxels = 3;	// object volume minimum for segmentation
-	int minspotvoxels_measure = 7;	// object volume minimum for measurement (maybe 7 is too small)	
-	int maxloops =50;	// maximum loop for optimum threshold searching
-	Vector<Object4D> obj4Dch0; //use extended class Object4D 100525 Might be better with ArrayList
-	Vector<Object4D> obj4Dch1; //use extended class Object4D 100525
+	
+	/**Object volume minimum for volume-based segmentation*/
+	int minspotvoxels = 3;	
+	
+	/**object volume minimum for measurement
+	 *  (maybe 7 is too small)*/
+	int minspotvoxels_measure = 7;
+	
+	/** maximum loop for exiting optimum threshold searching	 */
+	int maxloops =50;
+	
+	/** extended class of Object3D 
+	 * object3D + timepoint, channel, dotID
+	 * */
 	Object4D obj4d;	//Object3D added with time point and channel number fields. 
+	
+	/** Vector for storing detected dots in channel 0	 */
+	Vector<Object4D> obj4Dch0; 
+
+	/** Vector for storing detected dots in channel 1	 */
+	Vector<Object4D> obj4Dch1; 
 	
 	Calibration cal, calkeep;
 	double zfactor;
@@ -128,7 +147,7 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 		 }
 		 showDistances(linkedArray);
 		 if (rgbbin != null) drawlinks(linkedArray, rgbbin);
-
+		 drawlinksGrayscale(linkedArray, imp0, imp1);
 		 
 	}
 	public void drawlinks(Object4D[][] linked, ImagePlus imp){
@@ -144,6 +163,53 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 		imp.updateAndDraw();
 	}
 
+	//plotting linked lines, but with original grayscale image (will be converted to RGB).
+	public void drawlinksGrayscale(Object4D[][] linked, ImagePlus imp0, ImagePlus imp1){
+		ImagePlus ch0proj = null;
+		ImagePlus ch1proj = null;
+		ch0proj = createZprojTimeSeries(imp0, imp0.getNSlices(), imp0.getNFrames());
+		ch1proj = createZprojTimeSeries(imp1, imp1.getNSlices(), imp1.getNFrames());
+		new StackConverter(ch0proj).convertToRGB();
+		new StackConverter(ch1proj).convertToRGB();
+		
+		IJ.run("Colors...", "foreground=yellow background=white selection=yellow");
+		int ovalwidth = 1;
+		int ovalheight = 1;
+		int offset = 0;
+		int ch0x, ch0y, ch1x, ch1y;
+		for(int i = 0;  i < linked.length; i++) {
+			for(int j = 0;  j < linked[0].length; j += 2) {
+				if (linked[i][j] != null){
+					ch0x = Math.round(linked[i][j].centroid[0] - offset);
+					ch0y = Math.round(linked[i][j].centroid[1] - offset);
+					ch1x = Math.round(linked[i][j + 1].centroid[0] - offset);
+					ch1y = Math.round(linked[i][j + 1].centroid[1] - offset);
+
+					ImageProcessor ip0 = ch0proj.getStack().getProcessor(linked[i][j].timepoint + 1);
+					ip0.setColor(Color.blue);
+					ip0.drawLine(ch0x, ch0y, ch1x, ch1y);
+					ip0.setColor(Color.yellow);
+					ip0.drawPixel(ch0x, ch0y);
+					ip0.setColor(Color.red);
+					ip0.drawPixel(ch1x, ch1y);					
+
+					ImageProcessor ip1 = ch1proj.getStack().getProcessor(linked[i][j].timepoint + 1);
+					ip1.setColor(Color.blue);
+					ip1.drawLine(ch0x, ch0y, ch1x, ch1y);
+					ip1.setColor(Color.yellow);
+					ip1.drawPixel(ch0x, ch0y);
+					ip1.setColor(Color.red);
+					ip1.drawPixel(ch1x, ch1y);
+					
+				}	
+			}
+		}
+		ImageStack combined = new StackCombiner().combineHorizontally(ch0proj.getStack(), ch1proj.getStack());
+		ImagePlus combimp = new ImagePlus("DetectedDots", combined);
+		
+		combimp.show();
+	}
+
 
 	public ImagePlus createZprojTimeSeries(ImagePlus imp, int zframes, int tframes){
 		ImageStack zprostack = new ImageStack();
@@ -156,13 +222,15 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 			zpimp.doProjection();
 			zprostack.addSlice("t="+Integer.toString(i+1), zpimp.getProjection().getProcessor());
 		}
-		ImagePlus projimp = new ImagePlus();
-		projimp.setStack(zprostack);
+		ImagePlus projimp = new ImagePlus("proj" + imp.getTitle(), zprostack);
+		//projimp.setStack(zprostack);
 		
 		return projimp;				
 	}
 	
 	// processes each time point separated. 
+	// this part could have two options, whether to use trainable segmentation or simple threshold. 
+	// "particletracker3D" could also be implemented (segmentation part).
 	public ImagePlus segmentaitonByObjectSize(ImagePlus imp){
 
 		Duplicator bin = new Duplicator();	//this duplication may not be necessary
