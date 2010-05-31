@@ -32,17 +32,27 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 	int thr, minSize, maxSize, dotSize, fontSize;
 	boolean excludeOnEdges, showObj, showSurf, showCentro, showCOM, showNb, whiteNb, newRT, showStat, showMaskedImg, closeImg, showSummary, redirect;
 
-	int maxspotvoxels = 300000000;
+	ParamSetter_ para = new ParamSetter_();
+	int maxspotvoxels = para.getMaxspotvoxels();
 	
 	/**Object volume minimum for volume-based segmentation*/
-	int minspotvoxels = 3;	
+	int minspotvoxels = para.getMinspotvoxels();	
 	
 	/**object volume minimum for measurement
 	 *  (maybe 7 is too small)*/
-	int minspotvoxels_measure = 7;
+	int minspotvoxels_measure = para.getMinspotvoxels_measure();
 	
 	/** maximum loop for exiting optimum threshold searching	 */
-	int maxloops =50;
+	int maxloops = para.getMaxloops();
+	
+	int thadj_volmin = ParamSetter_.getThadj_volmin();
+	
+	int thadj_volmax = ParamSetter_.getThadj_volmax();
+	
+	int thadj_nummin = ParamSetter_.getThadj_nummin();
+	
+	int thadj_nummax = ParamSetter_.getThadj_nummax();
+	
 	
 	/** extended class of Object3D 
 	 * object3D + timepoint, channel, dotID
@@ -98,6 +108,9 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 		calkeep = cal.copy();
 		zfactor = cal.pixelDepth / cal.pixelWidth;
 		
+		IJ.log("min vox segment" + Integer.toString(minspotvoxels) + 
+				"\n min vox measure" + Integer.toString(minspotvoxels_measure));
+		
 		segAndMeasure( imp0, imp1);
 	}
 	
@@ -133,6 +146,14 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 		
 		Object4D[][] linkedArray = dotLinker(obj4Dch0,  obj4Dch1, imp0.getNFrames());
 		
+		showDistances(linkedArray);
+		 //if (rgbbin != null) drawlinks(linkedArray, rgbbin);
+		drawlinksGrayscale(linkedArray, imp0, imp1);
+		 
+	}
+	
+	// to print out linked dots and infromation in log window. 
+	void linkresultsPrinter(Object4D[][] linkedArray){
 		 for (int j = 0; j < linkedArray.length; j++){
 			 IJ.log("tframe = "+Integer.toString(j));
 			 for (int i = 0; i< linkedArray[0].length; i++){
@@ -145,11 +166,8 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 				 }
 			 }
 		 }
-		 showDistances(linkedArray);
-		 if (rgbbin != null) drawlinks(linkedArray, rgbbin);
-		 drawlinksGrayscale(linkedArray, imp0, imp1);
-		 
 	}
+	// not used anymore
 	public void drawlinks(Object4D[][] linked, ImagePlus imp){
 		IJ.run("Colors...", "foreground=white background=white selection=yellow");
 		for(int i = 0;  i < linked.length; i++) {
@@ -247,7 +265,7 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 			impcopy = dup.run(imp, (i*zframes+1), (i+1)*zframes);
 			minth = initializeThresholdLevel(impcopy);
 			IJ.log(Integer.toString(i)+": initial threshold set to "+Double.toString(minth));
-			adjth = (int) ThresholdAdjusterBy3Dobj(imp, (int)minth);
+			adjth = (int) ThresholdAdjusterBy3Dobj(imp, (int)minth, this.thadj_volmin, this.thadj_volmax, this.thadj_nummin, this.thadj_nummax);
 			IJ.log("... ... Adjusted to "+Integer.toString(adjth));
 			
 			for (int j=0; j<zframes; j++)
@@ -276,7 +294,12 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 		return i;
 	}
 	
-	public double ThresholdAdjusterBy3Dobj(ImagePlus imp, int initTh){
+	public double ThresholdAdjusterBy3Dobj(ImagePlus imp, 
+			int initTh, 
+			int thadj_volmin, 
+			int thadj_volmax, 
+			int thadj_nummin,
+			int thadj_nummax){
 		// somehow this part causes error in osx
 		//TODO implement initial setting more directly
 //		IJ.run("3D OC Options", "volume surface nb_of_obj._voxels nb_of_surf._voxels " +
@@ -293,24 +316,36 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 		Counter3D OC = new Counter3D(impcopy, initTh, minspotvoxels, (int) maxspotvoxels*2, excludeOnEdges, redirect);
 		Vector<Object3D> obj = OC.getObjectsList();
 		int nobj = obj.size();
-		IJ.log("Before Adjust\n...Number of Objects: "+Integer.toString(nobj));
 		int volumesum=0; 
 		for (int i=0; i<nobj; i++){
 			 Object3D currObj=obj.get(i);
 			 volumesum += currObj.size;
 		}
-		IJ.log("...Total Volume: "+Integer.toString(volumesum));
+		IJ.log("Threshold Adjuster initial th: "+ Integer.toString(initTh) +" ObjNum: "+Integer.toString(nobj)+"Volume Sum: "+Integer.toString(volumesum));
 		localthres = initTh;
-		int volmin = 5;
-		int volmax = 80;
 		int loopcount =0;
 //		while ( (((nobj != 2) && (nobj !=4))|| ((volumesum > maxspotvoxels*nobj) 
 //				|| (volumesum < minspotvoxels*nobj))) && (loopcount>maxloops)) {
-		while ( ((nobj<1)|| (nobj>4) || (volumesum > volmax
-					|| (volumesum <volmin))) && (loopcount<maxloops)) {
+		while ( 
+				(nobj < thadj_nummin || nobj > thadj_nummax || volumesum > thadj_volmax || volumesum <thadj_volmin) 
+				&& 
+				(loopcount<maxloops)
+				) {
 
-			if ((nobj<1) || (volumesum < volmin)) localthres--;
-			if ((nobj>4) || (volumesum > volmax)) localthres++;			
+			if ((nobj<thadj_nummin) && (volumesum < thadj_volmin)) localthres--;
+			if ((nobj<thadj_nummin) && (volumesum > thadj_volmax)) localthres++;			
+			if ((nobj>thadj_nummax) && (volumesum > thadj_volmax)) localthres--;
+			if ((nobj>thadj_nummax) && (volumesum < thadj_volmin)) localthres++;
+			if ((nobj >= thadj_nummin) && (nobj <= thadj_nummax)){
+				if (volumesum < thadj_volmin) localthres--;
+				else localthres++;
+			}
+			// this part is a bit not clear
+			if ((volumesum >= thadj_volmin) && (volumesum <= thadj_volmax)){
+				if (nobj < thadj_nummin) localthres++;
+				else localthres--;
+			}			
+			
 			OC = new Counter3D(impcopy, localthres, minspotvoxels, (int) (maxspotvoxels*1.5), excludeOnEdges, redirect);
 			obj = OC.getObjectsList();
 			nobj = obj.size();
@@ -321,7 +356,7 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 			}
 			loopcount++;
 		}
-		IJ.log("Loop exit by "+Integer.toString(loopcount)+ "Obj No."+Integer.toString(nobj)+"- VolumeSum"+Integer.toString(volumesum));
+		if (loopcount>0) IJ.log("... New Th="+ Integer.toString(localthres)+" Iter="+Integer.toString(loopcount)+ " ObjNo:"+Integer.toString(nobj)+"Volume Sum:"+Integer.toString(volumesum));
 		
 		return localthres;
 	}
@@ -347,7 +382,7 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 		for (int j=0; j<tframes; j++){
 			//coords.clear();
 			//vols.clear();
-			IJ.log("====frame "+Integer.toString(j)+" ==========");
+			//IJ.log("====frame "+Integer.toString(j)+" ==========");
 			imps = singletime.run(imp, j*zframes+1, j*zframes+zframes); 
 			Counter3D OC=new Counter3D(imps, thr, minSize, maxSize, excludeOnEdges, redirect);
 			newRT = true;
@@ -356,12 +391,12 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 
 			 Vector<Object3D> obj = OC.getObjectsList();
 			 int nobj = obj.size();
-			 IJ.log(Integer.toString(nobj));
+			 //IJ.log(Integer.toString(nobj));
 			 //sort obj in size-descending order. 
 			 Collections.sort(obj,  new ComparerBysize3D(ComparerBysize3D.DESC));
 			 for (int i=0; i<nobj; i++){			 
 				 Object3D cObj=obj.get(i);
-				 IJ.log(LogObject3D(cObj, i));
+				 //IJ.log(LogObject3D(cObj, i));
 				 obj4d = new Object4D(cObj.size);
 				 obj4d.CopyObj3Dto4D(cObj, j, chnum, i+1); //adds additional 4d parameters, timepoint, channel & dotID 
 				 obj4dv.add(obj4d);
