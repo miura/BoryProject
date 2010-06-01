@@ -2,7 +2,9 @@ package emblcmci;
 /** Holds Parameters for AutoThresholdAdjust3D_.class
  *	Dialogue to change default values.  
  */
+import ij.IJ;
 import ij.gui.GenericDialog;
+import ij.io.OpenDialog;
 import ij.plugin.PlugIn;
 
 public class ParamSetter_ implements PlugIn{
@@ -30,6 +32,10 @@ public class ParamSetter_ implements PlugIn{
 	private static int thadj_nummin = 1;
 	
 	private static int thadj_nummax = 4;
+	
+	private static String trainedDataFullPath0 = "/";
+
+	private static String trainedDataFullPath1 = "/";
 	
 	public ParamSetter_(){}
 
@@ -85,6 +91,21 @@ public class ParamSetter_ implements PlugIn{
 		this.setThadj_nummax((int) gd.getNextNumber());
 
 		this.setMaxloops((int) gd.getNextNumber());
+		
+		if (segMethod == 1) {
+			OpenDialog od0 = new OpenDialog("Choose ch0 data file","");
+			if (od0.getFileName()==null)
+				return false;
+			trainedDataFullPath0 = od0.getDirectory() + od0.getFileName();
+			IJ.log("Data for Ch0 will be laoded from " + trainedDataFullPath0 + "...");
+
+			OpenDialog od1 = new OpenDialog("Choose ch1 data file","");
+			if (od1.getFileName()==null)
+				return false;
+			setTrainedDataFullPath1(od1.getDirectory() + od1.getFileName());
+			IJ.log("Data for Ch1 will be laoded from " + getTrainedDataFullPath1() + "...");
+
+		}
 		return true;
 	}
 	public void run(String arg) {
@@ -164,56 +185,84 @@ public class ParamSetter_ implements PlugIn{
 	/**
 	 * @param thadj_volmin the thadj_volmin to set
 	 */
-	public static void setThadj_volmin(int thadj_volmin) {
+	public void setThadj_volmin(int thadj_volmin) {
 		ParamSetter_.thadj_volmin = thadj_volmin;
 	}
 
 	/**
 	 * @return the thadj_volmin
 	 */
-	public static int getThadj_volmin() {
+	public int getThadj_volmin() {
 		return thadj_volmin;
 	}
 
 	/**
 	 * @param thadj_volmax the thadj_volmax to set
 	 */
-	public static void setThadj_volmax(int thadj_volmax) {
+	public void setThadj_volmax(int thadj_volmax) {
 		ParamSetter_.thadj_volmax = thadj_volmax;
 	}
 
 	/**
 	 * @return the thadj_volmax
 	 */
-	public static int getThadj_volmax() {
+	public int getThadj_volmax() {
 		return thadj_volmax;
 	}
 
 	/**
 	 * @param thadj_nummin the thadj_nummin to set
 	 */
-	public static void setThadj_nummin(int thadj_nummin) {
+	public void setThadj_nummin(int thadj_nummin) {
 		ParamSetter_.thadj_nummin = thadj_nummin;
 	}
 
 	/**
 	 * @return the thadj_nummin
 	 */
-	public static int getThadj_nummin() {
+	public int getThadj_nummin() {
 		return thadj_nummin;
 	}
 
 	/**
 	 * @param thadj_nummax the thadj_nummax to set
 	 */
-	public static void setThadj_nummax(int thadj_nummax) {
+	public void setThadj_nummax(int thadj_nummax) {
 		ParamSetter_.thadj_nummax = thadj_nummax;
 	}
 
 	/**
 	 * @return the thadj_nummax
 	 */
-	public static int getThadj_nummax() {
+	public int getThadj_nummax() {
 		return thadj_nummax;
+	}
+
+	/**
+	 * @param trainedDataFullPath the trainedDataFullPath to set
+	 */
+	public void setTrainedDataFullPath0(String trainedDataFullPath) {
+		ParamSetter_.trainedDataFullPath0 = trainedDataFullPath;
+	}
+
+	/**
+	 * @return the trainedDataFullPath
+	 */
+	public String getTrainedDataFullPath0() {
+		return trainedDataFullPath0;
+	}
+
+	/**
+	 * @param trainedDataFullPath1 the trainedDataFullPath1 to set
+	 */
+	public void setTrainedDataFullPath1(String trainedDataFullPath1) {
+		ParamSetter_.trainedDataFullPath1 = trainedDataFullPath1;
+	}
+
+	/**
+	 * @return the trainedDataFullPath1
+	 */
+	public String getTrainedDataFullPath1() {
+		return trainedDataFullPath1;
 	}
 }

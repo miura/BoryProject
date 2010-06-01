@@ -1,19 +1,16 @@
 package emblcmci;
 
 //import sun.java2d.loops.FillPath;
+import trainableSegmentation.Trainable_Segmentation;
 import ij.*;
 import ij.process.*;
-//import ij.gui.*;
 import ij.io.OpenDialog;
-
 import ij.plugin.PlugIn;
-//import trainableSegmentation.*;	//Fiji plugin
-//import trainableSegmentation.Trainable_Segmentation;
 
 
 public class DotSegmentBy_Trained implements PlugIn {
 
-	public static String fullpathdata = "ttt";
+	private static String fullpathdata = "ttt";
 
 	//FFT parameters
 	public static int filterlarge =10;
@@ -29,14 +26,8 @@ public class DotSegmentBy_Trained implements PlugIn {
 	}
 	//** constructor 
 	//
-	public DotSegmentBy_Trained(){
-		FFTargument = "filter_large="+Integer.toString(filterlarge)
-		+" filter_small="+Integer.toString(filtersmall)
-		+" suppress="+suppress
-		+" tolerance="+Integer.toString(tolerance)
-		+" process";
-		//IJ.log(FFTargument);
-	}
+	public DotSegmentBy_Trained(){}
+	
 	
 	//for calling from macro
 	public static void setFFTparameters(int fl, int fs, int tol, String sups){
@@ -46,14 +37,18 @@ public class DotSegmentBy_Trained implements PlugIn {
 		suppress = sups;
 	}
 	
+	public void Setfullpathdata(String fullpathdata){
+		this.fullpathdata = fullpathdata;
+	}
 	
 	//interactively sets the trained data. dialog pops up.
-	public static void setDatapath(){
+	public String setDatapath(){
 		OpenDialog od = new OpenDialog("Choose data file","");
 		if (od.getFileName()==null)
-			return;
+			return null;
 		fullpathdata = od.getDirectory() + od.getFileName();
-		IJ.log("Loading data from " + fullpathdata + "...");
+		IJ.log("Data will be laoded from " + fullpathdata + "...");
+		return fullpathdata;
 	}
 	
 	// this could be called easily from automated routine in Macro. 
@@ -66,9 +61,10 @@ public class DotSegmentBy_Trained implements PlugIn {
 		ImagePlus currentimp;
 		//get current image
 		if (null == WindowManager.getCurrentImage()) 
-			currentimp = IJ.openImage();
+			currentimp = IJ.openImage(); 
 		else 		
 			currentimp = DuplicateStack(WindowManager.getCurrentImage());
+		if (null == currentimp) return;
 		//currentimp.show();
 		ImagePlus resultImage = Core(currentimp);
 		resultImage.show();			
@@ -124,23 +120,19 @@ public class DotSegmentBy_Trained implements PlugIn {
 		fullpath = fullpathdata;
 		for (int i=0; i<stack.getSize(); i++){
 			ipc = stack.getProcessor(i+1).duplicate();
-			LoadTrainedEx trainer = new LoadTrainedEx(); //too many instances for large stack?
-			trainer.setNoGUI(true);
-			trainer.setCurrentImageNoGUI(ipc);
-			trainer.loadTrainingDataNoGUI(fullpath); //data100423.arff 
+			//Ignacio's update
+			Trainable_Segmentation seg = new Trainable_Segmentation(new ImagePlus("temp"+i, ipc));
+			seg.loadTrainingData(fullpath);
 
-				//ImagePlus testImage = new ImagePlus("test image",ipc);
-				//trainer.applyClassifierToTestImage(testImage).show();	
-				//testImage.show();
 
-			try{
-				trainer.trainClassifier();
-			}catch(Exception e){
-				e.printStackTrace();
-			}
+//				try{
+//					trainer.trainClassifier();
+//				}catch(Exception e){
+//					e.printStackTrace();
+//				}
+			seg.trainClassifier();
 			IJ.log("trained segmentation of slice="+Integer.toString(i)+" finished");
-			binstack.addSlice("n="+Integer.toString(i), trainer.getClassifiedImage().getProcessor().convertToByte(true).duplicate(), i);
-			// test: new ImagePlus("n"+Integer.toString(i), trainer.getClassifiedImage().getProcessor().convertToByte(true).duplicate()).show();
+			binstack.addSlice("n="+Integer.toString(i), seg.getClassifiedImage().getProcessor().convertToByte(true).duplicate(), i);
 		    System.gc(); 	
 		}	
 			//trainer.showClassificationImage2();
@@ -153,78 +145,4 @@ public class DotSegmentBy_Trained implements PlugIn {
 		return logtext;
 	}
 
-	//parameters for FFT band pass filter: not used, sinceIJ.run is used
-	/*
-	public static double filterSmallDia = 2.0;
-	public static double filterLargeDia = 10.0;
-	private static int choiceIndex = 0;
-	public static double toleranceDia = 5.0;
-	public static boolean doScalingDia = true;
-	*/	
-	
-	//this method is not used currently 100416. tried to access directly to FFTfilter, but alternatively done by IJ.run 
-/*	public void FFTprocess(ImageStack stack){
-		//ImageProcessor ip2 = ip;
-		//if (ip2 instanceof ColorProcessor) {
-		//	//showStatus("Extracting brightness");
-		//	ip2 = ((ColorProcessor)ip2).getBrightness();
-		//} 
-		Rectangle roiRect = stack.getRoi();	// in case of no ROI, full size of the image field
-		int maxN = Math.max(roiRect.width, roiRect.height); 
-		double sharpness = (100.0 - toleranceDia) / 100.0;
-		boolean doScaling = doScalingDia;
-		//boolean saturate = saturateDia;
-		//IJ.runPlugIn(imp, "ij.plugin.filter.FFTFilter", "");
-		//
-		//maybe use IJ.runMacro("", parameters)
-		//IJ.showProgress(1,20);
-
-		/* 	tile mirrored image to power of 2 size		
-			first determine smallest power 2 >= 1.5 * image width/height
-		  	factor of 1.5 to avoid wrap-around effects of Fourier Trafo */
-
-/*		int i=2;
-		while(i<1.5 * maxN) i *= 2;		
-        
-        // Calculate the inverse of the 1/e frequencies for large and small structures.
-        double filterLarge = 2.0*filterLargeDia / (double)i;
-        double filterSmall = 2.0*filterSmallDia / (double)i;
-        
-		// fit image into power of 2 size 
-		Rectangle fitRect = new Rectangle();
-		fitRect.x = (int) Math.round( (i - roiRect.width) / 2.0 );
-		fitRect.y = (int) Math.round( (i - roiRect.height) / 2.0 );
-		fitRect.width = roiRect.width;
-		fitRect.height = roiRect.height;
-		
-		// put image (ROI) into power 2 size image
-		// mirroring to avoid wrap around effects
-		//showStatus("Pad to "+i+"x"+i); commented out
-		
-		// follwoing part shoul de done in slice loop?
-		
-		FFTFilter fftf = new FFTFilter();
-		
-		for (i=0; i<stack.getSize(); i++) {
-			ImageProcessor ip = stack.getProcessor(i);
-			ImageProcessor ip2 = ip; //probably need
-			
-			ip2 = fftf.tileMirror(ip2, i, i, fitRect.x, fitRect.y);
-			IJ.showProgress(2,20);
-			
-			// transform forward
-			//showStatus(i+"x"+i+" forward transform");
-			FHT fht = new FHT(ip2);
-			fht.setShowProgress(false);
-			fht.transform();
-			//IJ.showProgress(9,20);
-			//new ImagePlus("after fht",ip2.crop()).show();	
-
-			// filter out large and small structures
-			////showStatus("Filter in frequency domain");
-			fftf.filterLargeSmall(fht, filterLarge, filterSmall, choiceIndex, sharpness);		
-			//filterLargeSmall(fht, filterLarge, filterSmall, choiceIndex, sharpness);
-		}		
-	}
-	*/
 }

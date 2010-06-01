@@ -45,13 +45,19 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 	/** maximum loop for exiting optimum threshold searching	 */
 	int maxloops = para.getMaxloops();
 	
-	int thadj_volmin = ParamSetter_.getThadj_volmin();
+	int thadj_volmin = para.getThadj_volmin();
 	
-	int thadj_volmax = ParamSetter_.getThadj_volmax();
+	int thadj_volmax = para.getThadj_volmax();
 	
-	int thadj_nummin = ParamSetter_.getThadj_nummin();
+	int thadj_nummin = para.getThadj_nummin();
 	
-	int thadj_nummax = ParamSetter_.getThadj_nummax();
+	int thadj_nummax = para.getThadj_nummax();
+	
+	int segMethod = para.getSegMethod();
+
+	String fullpathtoTrainedData0 = para.getTrainedDataFullPath0();
+	
+	String fullpathtoTrainedData1 = para.getTrainedDataFullPath1();
 	
 	
 	/** extended class of Object3D 
@@ -114,9 +120,28 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 		segAndMeasure( imp0, imp1);
 	}
 	
-	public void segAndMeasure(ImagePlus imp0, ImagePlus imp1){
-		ImagePlus binimp0 = segmentaitonByObjectSize(imp0);
-		ImagePlus binimp1 = segmentaitonByObjectSize(imp1);
+	public boolean segAndMeasure(ImagePlus imp0, ImagePlus imp1){
+		ImagePlus binimp0, binimp1;
+		//auto adjusted threshold segmentation
+		if (segMethod == 0) {		
+			binimp0 = segmentaitonByObjectSize(imp0);
+			binimp1 = segmentaitonByObjectSize(imp1);
+		} else {
+		//Trainable Segmentation
+			if (segMethod == 1){
+				DotSegmentBy_Trained train = new DotSegmentBy_Trained();
+				train.Setfullpathdata(fullpathtoTrainedData0);
+				binimp0 = train.Core(imp0);
+				train.Setfullpathdata(fullpathtoTrainedData1);
+				binimp1 = train.Core(imp1);
+			} else {
+		//3D particle detection
+				if (segMethod == 2){			
+					IJ.log("Segmentation using Particle Tracker 3D is not implemented Yet");
+					return false;
+				} else return false;	
+			}
+		}
 		//binimp0.show();
 		//binimp1.show();
 		obj4Dch0 = new Vector<Object4D>();
@@ -149,7 +174,8 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 		showDistances(linkedArray);
 		 //if (rgbbin != null) drawlinks(linkedArray, rgbbin);
 		drawlinksGrayscale(linkedArray, imp0, imp1);
-		 
+		
+		return true; 
 	}
 	
 	// to print out linked dots and infromation in log window. 
