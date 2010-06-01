@@ -612,6 +612,7 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 	    * 
 	    * assumes that there is only one or two pairs.
 	    * Picks up largest and/or nearest particle first.  
+	    * TODO in one case, dots in different daughter cells were linked. This should be avoided. 
 	    */
 	   Object4D[][] dotLinker(Vector<Object4D> obj4Dch0,  Vector<Object4D> obj4Dch1, int tframes){
 		   Object4D[][] linked = new Object4D[tframes][4]; 
