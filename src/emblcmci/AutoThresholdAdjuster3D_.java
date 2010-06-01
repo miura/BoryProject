@@ -8,6 +8,7 @@ package emblcmci;
  */
 
 import java.awt.Color;
+import java.awt.Rectangle;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Vector;
@@ -19,12 +20,14 @@ import Utilities.Object3D;
 import ij.gui.GenericDialog;
 import ij.gui.Line;
 import ij.gui.OvalRoi;
+import ij.gui.Roi;
 import ij.measure.Calibration;
 import ij.measure.ResultsTable;
 import ij.plugin.*;
 import ij.process.ImageConverter;
 import ij.process.ImageProcessor;
 import ij.process.StackConverter;
+import ij.process.StackProcessor;
 
 public class AutoThresholdAdjuster3D_ implements PlugIn {
 
@@ -72,6 +75,10 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 	Vector<Object4D> obj4Dch1; 
 	
 	Calibration cal, calkeep;
+	
+	/**Factor to multiply for depth, to correct for xy pixel scale =1
+	 * 
+	 */
 	double zfactor;
 	
 	public void run(String arg) {
@@ -114,10 +121,53 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 		calkeep = cal.copy();
 		zfactor = cal.pixelDepth / cal.pixelWidth;
 		
-		IJ.log("min vox segment" + Integer.toString(minspotvoxels) + 
-				"\n min vox measure" + Integer.toString(minspotvoxels_measure));
-		
-		segAndMeasure( imp0, imp1);
+		IJ.log("min vox segment: " + Integer.toString(minspotvoxels) + 
+				"\n min vox measure : " + Integer.toString(minspotvoxels_measure));
+	
+		Roi r0 = imp0.getRoi();
+		Roi r1 = imp1.getRoi();
+		Roi r = null;
+
+		if ((r0 == null) && (r1 == null))				
+			segAndMeasure( imp0, imp1);
+		else {
+			ImagePlus imp0roi = null;
+			ImagePlus imp1roi = null;
+			IJ.log("... ROI found ... ");			
+			if (r0 == null) {
+				r =r1;
+			}
+			if (r1 == null) r =r0;
+			if (!r.isArea()) {
+				IJ.error("need a rectangular ROI");
+				return;
+			}
+			Rectangle rb = r.getBounds();
+			imp0.killRoi();
+			imp1.killRoi();			
+
+			ImagePlus tempdup = null;
+			StackProcessor tempstackproc = null;
+			ImageStack cropstack = null;
+
+			tempdup = new Duplicator().run(imp0);
+			tempstackproc  = new StackProcessor(tempdup.getStack(),tempdup.getStack().getProcessor(1));
+			cropstack = tempstackproc.crop(rb.x, rb.y, rb.width, rb.height);
+			imp0roi = new ImagePlus("croppedCh0", cropstack);
+			imp0roi.setCalibration(cal);
+			imp0roi.setDimensions(imp0.getNChannels(), imp0.getNSlices(), imp0.getNFrames());
+			imp0roi.show();
+			
+			tempdup = new Duplicator().run(imp1);
+			tempstackproc  = new StackProcessor(tempdup.getStack(),tempdup.getStack().getProcessor(1));
+			cropstack = tempstackproc.crop(rb.x, rb.y, rb.width, rb.height);
+			imp1roi = new ImagePlus("croppedCh1", cropstack);
+			imp1roi.setCalibration(cal);
+			imp1roi.setDimensions(imp1.getNChannels(), imp1.getNSlices(), imp1.getNFrames());
+			imp1roi.show();
+						
+			segAndMeasure(imp0roi, imp1roi);
+		}
 	}
 	
 	public boolean segAndMeasure(ImagePlus imp0, ImagePlus imp1){
@@ -131,9 +181,9 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 			if (segMethod == 1){
 				DotSegmentBy_Trained train = new DotSegmentBy_Trained();
 				train.Setfullpathdata(fullpathtoTrainedData0);
-				binimp0 = train.Core(imp0);
+				binimp0 = train.core(imp0);
 				train.Setfullpathdata(fullpathtoTrainedData1);
-				binimp1 = train.Core(imp1);
+				binimp1 = train.core(imp1);
 			} else {
 		//3D particle detection
 				if (segMethod == 2){			
@@ -523,7 +573,7 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 	   }
 	   
 	   //since there is only one dot in a channel, there could be only one link, with three cases
-	   int Compare2x1(int tpoint){
+	   int compare2x1(int tpoint){
 		   int flag = 0;
 		   int ch0dots = returnDotNumber(obj4Dch0, tpoint);
 		   int ch1dots = returnDotNumber(obj4Dch1, tpoint);
@@ -546,7 +596,7 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 	   }
 	   
 	   //only two cases  of combinations
-	   int Compare2x2(int tpoint){
+	   int compare2x2(int tpoint){
 		   int flag =0;
 		   Object4D ch0id1  = returnObj4D(obj4Dch0, tpoint, 1);
 		   Object4D ch0id2  = returnObj4D(obj4Dch0, tpoint, 2);
@@ -582,7 +632,7 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 					   linked[i][1] = obj4Dch1id1;				   
 				   } else {
 					   if ((obj4Dch0id2 != null) && (obj4Dch1id2 != null)) { //both channels contain multiple dots
-						   flag = Compare2x2(i);
+						   flag = compare2x2(i);
 						   if (flag == 1) {
 							   linked[i][0] = obj4Dch0id1;
 							   linked[i][1] = obj4Dch1id1;
@@ -595,7 +645,7 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 							   linked[i][3] = obj4Dch1id1;
 						   }
 					   } else {	// one channel contains only one dots
-						   flag = Compare2x1(i);
+						   flag = compare2x1(i);
 						   if (flag == 1) {
 							   linked[i][0] = obj4Dch0id1;
 							   linked[i][1] = obj4Dch1id1;

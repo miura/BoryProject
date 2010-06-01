@@ -1,10 +1,17 @@
 package emblcmci;
 
-//import sun.java2d.loops.FillPath;
+/** Segmentation of Chromosome dots using trained aiff data 
+ * by Trainable_Segmentation without GUI. 
+ * 
+ * @author Kota Miura
+ * @author CMCI EMBL
+ */
+
 import trainableSegmentation.Trainable_Segmentation;
 import ij.*;
 import ij.process.*;
 import ij.io.OpenDialog;
+import ij.plugin.Duplicator;
 import ij.plugin.PlugIn;
 
 
@@ -12,30 +19,14 @@ public class DotSegmentBy_Trained implements PlugIn {
 
 	private static String fullpathdata = "ttt";
 
-	//FFT parameters
-	public static int filterlarge =10;
-	public static int filtersmall =2;
-	public static int tolerance =5;
-	public static String suppress ="None";
-	public static String FFTargument;
-	
 	public void run(String arg) {
 		IJ.log("test fiji");
 		setDatapath(); 
-		ProcessTopImage();
+		processTopImage();
 	}
 	//** constructor 
 	//
 	public DotSegmentBy_Trained(){}
-	
-	
-	//for calling from macro
-	public static void setFFTparameters(int fl, int fs, int tol, String sups){
-		filterlarge = fl;
-		filtersmall = fs;
-		tolerance = tol;
-		suppress = sups;
-	}
 	
 	public void Setfullpathdata(String fullpathdata){
 		this.fullpathdata = fullpathdata;
@@ -57,25 +48,25 @@ public class DotSegmentBy_Trained implements PlugIn {
 		IJ.log("Loading data from " + fullpathdata + "...");
 	}
 	
-	public static void ProcessTopImage(){
+	public static void processTopImage(){
 		ImagePlus currentimp;
 		//get current image
 		if (null == WindowManager.getCurrentImage()) 
 			currentimp = IJ.openImage(); 
 		else 		
-			currentimp = DuplicateStack(WindowManager.getCurrentImage());
+			currentimp = new Duplicator().run(WindowManager.getCurrentImage());
 		if (null == currentimp) return;
 		//currentimp.show();
-		ImagePlus resultImage = Core(currentimp);
+		ImagePlus resultImage = core(currentimp);
 		resultImage.show();			
 	}
 	
 	public static void duplicatetest(){
-		DuplicateStack(WindowManager.getCurrentImage());
+		duplicateStack(WindowManager.getCurrentImage());
 	}
 	
 	//duplicate and make another instance of imp
-	public static ImagePlus DuplicateStack(ImagePlus ims){
+	public static ImagePlus duplicateStack(ImagePlus ims){
 		ImageStack stack = ims.getImageStack();
 		
 		ImageStack dupstack = ims.createEmptyStack();
@@ -88,28 +79,16 @@ public class DotSegmentBy_Trained implements PlugIn {
 		return dupimp;
 	}
 	// this as well could be called from macro easily. 
-	public static void ProcessImageAt(String fullpathstack){
+	public static void processImageAt(String fullpathstack){
 		//String fullpathstack = "C:\\HDD\\People\\Bory\\testChromosome\\3con170210_6_R3D.dv - C=0.tif";
 		//String fullpathstack = "C:\\HDD\\People\\Bory\\100423\\tt.tif";
 		ImagePlus imp = IJ.openImage(fullpathstack);//during development, in
-		ImagePlus resultImage = Core(imp);
+		ImagePlus resultImage = core(imp);
 		IJ.log(resultImage.getTitle());
 		resultImage.show();	
 	}
-
-	public static void FFTbandPssSpec(ImagePlus imp) {
-		//FFTprocess(stack); filterlargesmall() cannot be used, so do the higher method as below. 
-		 //IJ.run(imp, "Bandpass Filter...", "filter_large=10 filter_small=2 suppress=None tolerance=5 autoscale process");
-		FFTargument = "filter_large="+Integer.toString(filterlarge)
-						+" filter_small="+Integer.toString(filtersmall)
-						+" suppress="+suppress
-						+" tolerance="+Integer.toString(tolerance)
-						+" process";
-		IJ.log(FFTargument);
-		IJ.run(imp, "Bandpass Filter...", FFTargument); 		
-	}
 	
-	public static ImagePlus Core(ImagePlus imp){
+	public static ImagePlus core(ImagePlus imp){
 
 		ImageStack stack = imp.getStack();
 
