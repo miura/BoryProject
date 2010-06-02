@@ -1,6 +1,9 @@
 package emblcmci;
 
-/** Preprocess image stack by specifeied FFT parameters. 
+/** Preprocess image stack by several steps of filtering and corrections
+ * 1. 16 bit to 8 bit
+ * 2. FFT band pass with parameters.
+ * 3. Matching Histogram Bleaching Correction 
  * 
  * @author Kota Miura
  * @author CMCI EMBL, 2010
@@ -13,7 +16,6 @@ import ij.plugin.Duplicator;
 import ij.plugin.PlugIn;
 import ij.process.ImageConverter;
 import ij.process.StackConverter;
-import ij.process.StackStatistics;
 
 public class Preprocess_ChromosomeDots implements PlugIn {
 	//FFT parameters
@@ -31,18 +33,14 @@ public class Preprocess_ChromosomeDots implements PlugIn {
 		else 		
 			imp = new Duplicator().run(WindowManager.getCurrentImage());
 		if (null == imp) return;
-		StackStatistics impstat = new StackStatistics(imp);
-		double maxint = impstat.max;
-		double minint = impstat.min;		
-		IJ.log("max int = " + Double.toString(maxint));
-		IJ.log("min int = " + Double.toString(minint));
 		ImageConverter.setDoScaling(true);
-		imp.getProcessor().setMinAndMax(minint, maxint);
+		IJ.run(imp, "Enhance Contrast", "saturated=0.001 use");
 		StackConverter sc = new StackConverter(imp);
 		sc.convertToGray8();
 		//IJ.run(imp, "8-bit", "");
 		fftbandPssSpec(imp);
-		imp.show();
+		new BleachCorrection_MatchHistogram().bleachCorrectionHM(imp);
+		//imp.show();
 	}
 	public void setFFTparameters(int fl, int fs, int tol, String sups){
 		filterlarge = fl;
