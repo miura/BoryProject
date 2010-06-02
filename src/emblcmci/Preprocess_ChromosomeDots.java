@@ -11,6 +11,9 @@ import ij.ImagePlus;
 import ij.WindowManager;
 import ij.plugin.Duplicator;
 import ij.plugin.PlugIn;
+import ij.process.ImageConverter;
+import ij.process.StackConverter;
+import ij.process.StackStatistics;
 
 public class Preprocess_ChromosomeDots implements PlugIn {
 	//FFT parameters
@@ -28,7 +31,18 @@ public class Preprocess_ChromosomeDots implements PlugIn {
 		else 		
 			imp = new Duplicator().run(WindowManager.getCurrentImage());
 		if (null == imp) return;
+		StackStatistics impstat = new StackStatistics(imp);
+		double maxint = impstat.max;
+		double minint = impstat.min;		
+		IJ.log("max int = " + Double.toString(maxint));
+		IJ.log("min int = " + Double.toString(minint));
+		ImageConverter.setDoScaling(true);
+		imp.getProcessor().setMinAndMax(minint, maxint);
+		StackConverter sc = new StackConverter(imp);
+		sc.convertToGray8();
+		//IJ.run(imp, "8-bit", "");
 		fftbandPssSpec(imp);
+		imp.show();
 	}
 	public void setFFTparameters(int fl, int fs, int tol, String sups){
 		filterlarge = fl;
