@@ -8,6 +8,7 @@ import ij.plugin.filter.Analyzer;
 import ij.process.ImageProcessor;
 //import QuickPALM.MyDialogs;
 import QuickPALM.MyFunctions;
+import QuickPALM.ParticleSaver;
 
 public class DotDetect_QPALM implements PlugIn {
 
@@ -32,6 +33,13 @@ class DetectDotsQP extends MyFunctions {
 	ResultsTable ptable = Analyzer.getResultsTable(); // Particle table
 	double dotdiameter = 2;
 	boolean smartsnr = true;
+	java.util.concurrent.locks.Lock ptable_lock = new java.util.concurrent.locks.ReentrantLock();
+
+	double [] cal3d_z; // z positions
+	double [] cal3d_wmh; // width minus height
+	int cal3d_center; // closest index to the center value of the cal3d_* arrays
+	ParticleSaver psave; // Particle saver manager class
+
 	
 	void detectParticles(ImageProcessor ip, int nframe,  int maxpart, int snr)
 	{
@@ -280,7 +288,8 @@ class DetectDotsQP extends MyFunctions {
 		// area filter
 		if (npixels<5 || ((xlstd+xrstd)*1.177>dg.fwhm) || ((ylstd+yrstd)*1.177>dg.fwhm))
 		{
-			log("fail on size");
+			//log("fail on size");
+			IJ.log("fail on size");			
 			clearRegion(thrsh, ip, mask, xstart, xend, ystart, yend);
 			return false;
 		}
@@ -295,7 +304,8 @@ class DetectDotsQP extends MyFunctions {
 		{
 			if (sym < dg.symmetry)
 			{
-				log("fail on 2D symmetry");
+				//log("fail on 2D symmetry");
+				IJ.log("fail on 2D symmetry");
 				clearRegion(thrsh, ip, mask, xstart, xend, ystart, yend);
 				return false;
 			}
@@ -305,7 +315,8 @@ class DetectDotsQP extends MyFunctions {
 		{
 			if (xsym<dg.symmetry || ysym<dg.symmetry)
 			{
-				log("fail on 3D symmetry");
+				//log("fail on 3D symmetry");
+				IJ.log("fail on 3D symmetry");
 				clearRegion(thrsh, ip, mask, xstart, xend, ystart, yend);
 				return false;
 			}
@@ -350,5 +361,83 @@ class DetectDotsQP extends MyFunctions {
 		
 		clearRegion(thrsh, ip, mask, xstart, xend, ystart, yend);
 		return true;
-	}	
+	}
+	
+	//copied from MyFunction.java in QuickPalmPackage
+	void clearRegion(double thrsh, ImageProcessor ip, boolean [][] mask, int xstart, int xend, int ystart, int yend)
+	{
+		int s;
+		for (int i=xstart;i<=xend;i++)
+			for (int j=ystart;j<=yend;j++)
+			{
+				s=ip.get(i,j);
+				if (s>thrsh)
+				{
+					ip.set(i, j, 0);
+					mask[i][j]=true;
+				}
+			}
+	}
+	
+	/** Given a calculated width-minus-height (wmh) converts this value into
+	 * the corresponding coordinate in Z by comparing against the loaded
+	 * Z-calibration table. Only used it the particle is disturbed by
+	 * astigmatism.
+	 *
+	 * @param wmh the width-minus-height of a particle
+	 * @return corresponding z-position value, will return 9999 if wmh is out of limits
+	*/
+	double getZ(double wmh)
+	{
+		int n = getClosest(wmh, cal3d_wmh, cal3d_center);
+		if ((n==0) || (n==(cal3d_z.length-1)))
+			return 9999;
+		double x1 = (cal3d_wmh[n-1]+cal3d_wmh[n])/2;
+		double x2 = (cal3d_wmh[n+1]+cal3d_wmh[n])/2;
+		double y1 = (cal3d_z[n-1]+cal3d_z[n])/2;
+		double y2 = (cal3d_z[n+1]+cal3d_z[n])/2;
+		
+		// linear interpolation between the two nearest values found on the
+		// Z-calibration table
+		return y1 + ((y2 - y1) / (x2 - x1))*(wmh - x1);
+	}
+	
+	int getClosest(double value, double [] arr, int center)
+	{
+		int maxd;
+		int closest = center;
+		int nvalues = arr.length;
+		double err = 0;
+		double olderr = 9999999;
+		int p;
+		if ((nvalues-center)>=nvalues)
+			maxd=nvalues-center;
+		else
+			maxd=center;
+		for (int n=0;n<maxd;n++)
+		{
+			p=center+n;
+			if (p<nvalues)
+			{
+				err=Math.abs(value-arr[p]);
+				if (err<olderr)
+				{
+					closest=p;
+					olderr=err;
+				}
+			}
+			p=center-n;
+			if (p>0)
+			{
+				err=Math.abs(value-arr[p]);
+				if (err<olderr)
+				{
+					closest=p;
+					olderr=err;
+				}
+			}
+		}
+		return closest;
+	}
+
 }
