@@ -33,6 +33,10 @@ class DetectDotsQP extends MyFunctions {
 	ResultsTable ptable = Analyzer.getResultsTable(); // Particle table
 	double dotdiameter = 2;
 	boolean smartsnr = true;
+	double pixelsize = 1.0; //this should be rewritten, get scale from imp
+	boolean is3d = true;
+	double symmetry; // check what _Minimum symmetry (%) does
+	double pthrsh = 0.2; //local threshold "Particle local threshold (% maximum intensity)"
 	java.util.concurrent.locks.Lock ptable_lock = new java.util.concurrent.locks.ReentrantLock();
 
 	double [] cal3d_z; // z positions
@@ -161,7 +165,8 @@ class DetectDotsQP extends MyFunctions {
 		int yend = ymax+1+roirad;
 		int width = ip.getWidth();
 		int height = ip.getHeight();
-		double thrsh = smax*dg.pthrsh;
+		//double thrsh = smax*dg.pthrsh;
+		double thrsh = smax*pthrsh;
 		
 		int i, j;
 		
@@ -286,7 +291,8 @@ class DetectDotsQP extends MyFunctions {
 		double z = 0;
 		
 		// area filter
-		if (npixels<5 || ((xlstd+xrstd)*1.177>dg.fwhm) || ((ylstd+yrstd)*1.177>dg.fwhm))
+		//if (npixels<5 || ((xlstd+xrstd)*1.177>dg.fwhm) || ((ylstd+yrstd)*1.177>dg.fwhm))
+		if (npixels<5 || ((xlstd+xrstd)*1.177>dotdiameter) || ((ylstd+yrstd)*1.177>dotdiameter))
 		{
 			//log("fail on size");
 			IJ.log("fail on size");			
@@ -300,9 +306,12 @@ class DetectDotsQP extends MyFunctions {
 		double sym = (xsym<ysym)?xsym:ysym;
 		
 		// if 2D
-		if (!dg.is3d)
+		//if (!dg.is3d)
+		if (!is3d)
+
 		{
-			if (sym < dg.symmetry)
+			//if (sym < dg.symmetry)
+			if (sym < symmetry)
 			{
 				//log("fail on 2D symmetry");
 				IJ.log("fail on 2D symmetry");
@@ -313,7 +322,8 @@ class DetectDotsQP extends MyFunctions {
 		// if 3D
 		else
 		{
-			if (xsym<dg.symmetry || ysym<dg.symmetry)
+			//if (xsym<dg.symmetry || ysym<dg.symmetry)
+			if (xsym<symmetry || ysym<symmetry)	
 			{
 				//log("fail on 3D symmetry");
 				IJ.log("fail on 3D symmetry");
@@ -329,8 +339,10 @@ class DetectDotsQP extends MyFunctions {
 		}
 		
 		double s_ = sSum/npixels;
-		double xm_=xm*dg.pixelsize;
-		double ym_=ym*dg.pixelsize;
+//		double xm_=xm*dg.pixelsize;
+//		double ym_=ym*dg.pixelsize;
+		double xm_=xm*pixelsize;
+		double ym_=ym*pixelsize;
 		double xlstd_=xlstd*1.177;
 		double xrstd_=xrstd*1.177;
 		double ylstd_=ylstd*1.177;
