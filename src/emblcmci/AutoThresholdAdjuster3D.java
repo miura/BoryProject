@@ -19,23 +19,21 @@ import Utilities.Counter3D;
 import Utilities.Object3D;
 import ij.gui.GenericDialog;
 import ij.gui.Line;
-import ij.gui.OvalRoi;
 import ij.gui.Roi;
 import ij.measure.Calibration;
 import ij.measure.ResultsTable;
 import ij.plugin.*;
-import ij.process.ImageConverter;
 import ij.process.ImageProcessor;
 import ij.process.StackConverter;
 import ij.process.StackProcessor;
 
-public class AutoThresholdAdjuster3D_ implements PlugIn {
+public class AutoThresholdAdjuster3D {
 
 	private static boolean createComposite = true;	
 	int thr, minSize, maxSize, dotSize, fontSize;
 	boolean excludeOnEdges, showObj, showSurf, showCentro, showCOM, showNb, whiteNb, newRT, showStat, showMaskedImg, closeImg, showSummary, redirect;
 
-	ParamSetter_ para = new ParamSetter_();
+	ParamSetter para = new ParamSetter();
 	int maxspotvoxels = para.getMaxspotvoxels();
 	
 	/**Object volume minimum for volume-based segmentation*/
@@ -81,7 +79,7 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 	 */
 	double zfactor;
 	
-	public void run(String arg) {
+	public void run() {
 
 		//copied and modified from image - color merge... (RGBStackMerge.java)
 		int[] wList = WindowManager.getIDList();
@@ -179,7 +177,7 @@ public class AutoThresholdAdjuster3D_ implements PlugIn {
 		} else {
 		//Trainable Segmentation
 			if (segMethod == 1){
-				DotSegmentBy_Trained train = new DotSegmentBy_Trained();
+				DotSegmentByTrained train = new DotSegmentByTrained();
 				train.Setfullpathdata(fullpathtoTrainedData0);
 				binimp0 = train.core(imp0);
 				train.Setfullpathdata(fullpathtoTrainedData1);

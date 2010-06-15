@@ -17,7 +17,7 @@ import ij.plugin.PlugIn;
 import ij.process.ImageConverter;
 import ij.process.StackConverter;
 
-public class Preprocess_ChromosomeDots implements PlugIn {
+public class PreprocessChromosomeDots {
 	//FFT parameters
 	private int filterlarge =10;
 	private int filtersmall =2;
@@ -26,8 +26,7 @@ public class Preprocess_ChromosomeDots implements PlugIn {
 	private String fftargument;
 	
 	ImagePlus imp;
-	@Override
-	public void run(String arg) {
+	public void run() {
 		if (null == WindowManager.getCurrentImage()) 
 			imp = IJ.openImage(); 
 		else 		

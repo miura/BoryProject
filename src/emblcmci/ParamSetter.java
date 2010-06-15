@@ -7,7 +7,7 @@ import ij.gui.GenericDialog;
 import ij.io.OpenDialog;
 import ij.plugin.PlugIn;
 
-public class ParamSetter_ implements PlugIn{
+public class ParamSetter{
 	
 	private String[] segMethods = { "AutoThreshold", "TrainableSegmentation", "3D_ParticleDetector" };
 	
@@ -37,9 +37,9 @@ public class ParamSetter_ implements PlugIn{
 
 	private static String trainedDataFullPath1 = "/";
 	
-	public ParamSetter_(){}
+	public ParamSetter(){}
 
-	public ParamSetter_(
+	public ParamSetter(
 			int segMethod,
 			int maxspotvoxels, 
 			int minspotvoxels, 
@@ -108,10 +108,7 @@ public class ParamSetter_ implements PlugIn{
 		}
 		return true;
 	}
-	public void run(String arg) {
-		ParamSetter_ para = new ParamSetter_();
-		para.showDialog();
-	}
+
 	/**
 	 * @param segMethod the segMethod to set
 	 */
@@ -186,7 +183,7 @@ public class ParamSetter_ implements PlugIn{
 	 * @param thadj_volmin the thadj_volmin to set
 	 */
 	public void setThadj_volmin(int thadj_volmin) {
-		ParamSetter_.thadj_volmin = thadj_volmin;
+		ParamSetter.thadj_volmin = thadj_volmin;
 	}
 
 	/**
@@ -200,7 +197,7 @@ public class ParamSetter_ implements PlugIn{
 	 * @param thadj_volmax the thadj_volmax to set
 	 */
 	public void setThadj_volmax(int thadj_volmax) {
-		ParamSetter_.thadj_volmax = thadj_volmax;
+		ParamSetter.thadj_volmax = thadj_volmax;
 	}
 
 	/**
@@ -214,7 +211,7 @@ public class ParamSetter_ implements PlugIn{
 	 * @param thadj_nummin the thadj_nummin to set
 	 */
 	public void setThadj_nummin(int thadj_nummin) {
-		ParamSetter_.thadj_nummin = thadj_nummin;
+		ParamSetter.thadj_nummin = thadj_nummin;
 	}
 
 	/**
@@ -228,7 +225,7 @@ public class ParamSetter_ implements PlugIn{
 	 * @param thadj_nummax the thadj_nummax to set
 	 */
 	public void setThadj_nummax(int thadj_nummax) {
-		ParamSetter_.thadj_nummax = thadj_nummax;
+		ParamSetter.thadj_nummax = thadj_nummax;
 	}
 
 	/**
@@ -242,7 +239,7 @@ public class ParamSetter_ implements PlugIn{
 	 * @param trainedDataFullPath the trainedDataFullPath to set
 	 */
 	public void setTrainedDataFullPath0(String trainedDataFullPath) {
-		ParamSetter_.trainedDataFullPath0 = trainedDataFullPath;
+		ParamSetter.trainedDataFullPath0 = trainedDataFullPath;
 	}
 
 	/**
@@ -256,7 +253,7 @@ public class ParamSetter_ implements PlugIn{
 	 * @param trainedDataFullPath1 the trainedDataFullPath1 to set
 	 */
 	public void setTrainedDataFullPath1(String trainedDataFullPath1) {
-		ParamSetter_.trainedDataFullPath1 = trainedDataFullPath1;
+		ParamSetter.trainedDataFullPath1 = trainedDataFullPath1;
 	}
 
 	/**

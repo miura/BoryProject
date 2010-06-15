@@ -15,18 +15,18 @@ import ij.plugin.Duplicator;
 import ij.plugin.PlugIn;
 
 
-public class DotSegmentBy_Trained implements PlugIn {
+public class DotSegmentByTrained {
 
 	private static String fullpathdata = "ttt";
 
-	public void run(String arg) {
-		IJ.log("test fiji");
+	public void run() {
+		//IJ.log("test fiji");
 		setDatapath(); 
 		processTopImage();
 	}
 	//** constructor 
 	//
-	public DotSegmentBy_Trained(){}
+	public DotSegmentByTrained(){}
 	
 	public void Setfullpathdata(String fullpathdata){
 		this.fullpathdata = fullpathdata;
