@@ -3,6 +3,7 @@ package emblcmci;
 /* segmentation of yeast chromosome 
  * use 3D object counter to adjust threshold level of 3D stack. 
  * 3D object counter must be installed in ImageJ
+ * 100614 main functions now in separate classes
  * @author Kota Miura  
  * @ cmci, embl miura@embl.de
  */
@@ -132,10 +133,15 @@ public class AutoThresholdAdjuster3D {
 			ImagePlus imp0roi = null;
 			ImagePlus imp1roi = null;
 			IJ.log("... ROI found ... ");			
-			if (r0 == null) {
+			if (r0 == null) 
 				r =r1;
+			else
+				//if (r1 == null)
+				r =r0;
+			if (r == null) {
+					IJ.error("need a rectangular ROI");
+					return;
 			}
-			if (r1 == null) r =r0;
 			if (!r.isArea()) {
 				IJ.error("need a rectangular ROI");
 				return;
@@ -207,12 +213,12 @@ public class AutoThresholdAdjuster3D {
 			rgbbin.show();
 			
 		}
-		//measurement part
+		//3D object measurement part
 		
-		int ch0objnum = measureDots(binimp0, "Ch0", obj4Dch0);
+		int ch0objnum = measureDots(binimp0, "Ch0", obj4Dch0, imp0.getNSlices());
 		showStatistics(obj4Dch0);
 		
-		int ch1objnum = measureDots(binimp1, "Ch1", obj4Dch1);
+		int ch1objnum = measureDots(binimp1, "Ch1", obj4Dch1, imp1.getNSlices());
 		showStatistics(obj4Dch1);
 		
 		//analysis 
@@ -436,11 +442,11 @@ public class AutoThresholdAdjuster3D {
 	}
 	
 	public int measureDots(ImagePlus imp, String chnum, 
-			Vector<Object4D> obj4dv) {
+			Vector<Object4D> obj4dv, int zframes) {
 		
 		int nSlices = imp.getStackSize();
 		if (nSlices ==1) return -1;
-		int zframes =8; // TODO
+		//int zframes =8; // TODO
 		int tframes = nSlices/zframes;
 	
 		//IJ.log(Integer.toString(imp.getHeight()));
@@ -500,13 +506,15 @@ public class AutoThresholdAdjuster3D {
 	        ResultsTable rt;        
 	        rt=new ResultsTable();	        
 	        for (int i=0; i<obj4Dv.size(); i++){
-	            rt.incrementCounter();
-	            rt.setValue("frame", i, obj4Dv.get(i).timepoint);
-	            rt.setValue("Volume", i, obj4Dv.get(i).size);
-	            rt.setValue("x", i, obj4Dv.get(i).centroid[0]);
-	            rt.setValue("y", i, obj4Dv.get(i).centroid[1]);
-	            rt.setValue("z", i, obj4Dv.get(i).centroid[2]);
-	            rt.setValue("Intden", i, obj4Dv.get(i).int_dens);
+	            if (obj4Dv.get(i).centroid.length > 1){
+	            	rt.incrementCounter();
+	            	rt.setValue("frame", i, obj4Dv.get(i).timepoint);
+	            	rt.setValue("Volume", i, obj4Dv.get(i).size);
+	            	rt.setValue("x", i, obj4Dv.get(i).centroid[0]);
+		            rt.setValue("y", i, obj4Dv.get(i).centroid[1]);
+		            rt.setValue("z", i, obj4Dv.get(i).centroid[2]);
+		            rt.setValue("Intden", i, obj4Dv.get(i).int_dens);
+	            }
 	        }
 	       
 	        rt.show("Statistics_"+obj4Dv.get(0).chnum);     
@@ -515,14 +523,16 @@ public class AutoThresholdAdjuster3D {
 	        ResultsTable rt;        
 	        rt=new ResultsTable();
 	        int ct = 0;
+	        double ch0ch1dist = -1;
 	        for (int i=0; i<linked.length; i++){
 	        	for (int j = 0; j < linked[0].length; j+=2){
 		        	if ((linked[i][j] != null) && (linked[i][j+1] != null)){
 		        		rt.incrementCounter();
+		        		ch0ch1dist = returnDistance(linked[i][j], linked[i][j+1]);
 		        		rt.setValue("frame", ct, linked[i][j].timepoint);
-			            rt.setValue("ch0-ch1_dist", ct, returnDistance(linked[i][j], linked[i][j+1]));
-			            float ch0dist = 0;
-			            float ch1dist = 0;
+			            rt.setValue("ch0-ch1_dist", ct, ch0ch1dist);
+			            double ch0dist = 0;
+			            double ch1dist = 0;
 						if (linked[i][3] != null) {
 			            	ch0dist = returnDistance(linked[i][0], linked[i][2]);
 							ch1dist = returnDistance(linked[i][1], linked[i][3]);
@@ -540,13 +550,17 @@ public class AutoThresholdAdjuster3D {
 	        rt.show("Statistics_Distance");     
 	    }
 	   //for calculating distance from index
-	   public float returnDistance(Object4D obj1, Object4D obj2){
-			float sqd = (float) (
-				Math.pow(obj1.centroid[0] - obj2.centroid[0], 2) 
-				+ Math.pow(obj1.centroid[1] - obj2.centroid[1], 2) 
-				+ Math.pow((obj1.centroid[2] - obj2.centroid[2])*zfactor, 2)
-				);
-			return (float) Math.pow(sqd, 0.5);
+	   public double returnDistance(Object4D obj1, Object4D obj2){
+		   double dist = -1.0;
+		   if ((obj1.centroid.length > 1) && (obj2.centroid.length > 1)) {
+			   double sqd = (
+					   Math.pow(obj1.centroid[0] - obj2.centroid[0], 2) 
+					   + Math.pow(obj1.centroid[1] - obj2.centroid[1], 2) 
+					   + Math.pow((obj1.centroid[2] - obj2.centroid[2])*zfactor, 2)
+					);
+			   dist = Math.pow(sqd, 0.5);
+		   }	
+		   return dist;
 		}
 
 	   // returns number of dots at single time point
@@ -579,14 +593,14 @@ public class AutoThresholdAdjuster3D {
 		   Object4D ch1id1  = returnObj4D(obj4Dch1, tpoint, 1);
 		   if (ch0dots == 1) {
 			   Object4D ch1id2  = returnObj4D(obj4Dch1, tpoint, 2);
-			   float dist1 =returnDistance(ch0id1, ch1id1);
-			   float dist2 =returnDistance(ch0id1, ch1id2);
+			   double dist1 =returnDistance(ch0id1, ch1id1);
+			   double dist2 =returnDistance(ch0id1, ch1id2);
 			   if (dist1 < dist2) flag = 1;
 			   else flag = 2;
 		   } else {
 			   Object4D ch0id2  = returnObj4D(obj4Dch0, tpoint, 2);
-			   float dist1 =returnDistance(ch0id1, ch1id1);
-			   float dist2 =returnDistance(ch0id2, ch1id1);
+			   double dist1 =returnDistance(ch0id1, ch1id1);
+			   double dist2 =returnDistance(ch0id2, ch1id1);
 			   if (dist1 < dist2) flag = 1;
 			   else flag = 3;			   
 		   }
@@ -600,8 +614,8 @@ public class AutoThresholdAdjuster3D {
 		   Object4D ch0id2  = returnObj4D(obj4Dch0, tpoint, 2);
 		   Object4D ch1id1  = returnObj4D(obj4Dch1, tpoint, 1);
 		   Object4D ch1id2  = returnObj4D(obj4Dch1, tpoint, 2);
-		   float dist1 = returnDistance(ch0id1, ch1id1) + returnDistance(ch0id2, ch1id2);
-		   float dist2 = returnDistance(ch0id1, ch1id2) + returnDistance(ch0id2, ch1id1);
+		   double dist1 = returnDistance(ch0id1, ch1id1) + returnDistance(ch0id2, ch1id2);
+		   double dist2 = returnDistance(ch0id1, ch1id2) + returnDistance(ch0id2, ch1id1);
 		   if (dist1 < dist2) flag = 1;
 		   else flag = 2;		   
 		   return flag;
@@ -630,7 +644,7 @@ public class AutoThresholdAdjuster3D {
 					   linked[i][0] = obj4Dch0id1;
 					   linked[i][1] = obj4Dch1id1;				   
 				   } else {
-					   if ((obj4Dch0id2 != null) && (obj4Dch1id2 != null)) { //both channels contain multiple dots
+					   if ((obj4Dch0id2 != null) && (obj4Dch1id2 != null)) { // 2x2 both channels contain multiple dots
 						   flag = compare2x2(i);
 						   if (flag == 1) {
 							   linked[i][0] = obj4Dch0id1;
@@ -643,7 +657,7 @@ public class AutoThresholdAdjuster3D {
 							   linked[i][2] = obj4Dch0id2;
 							   linked[i][3] = obj4Dch1id1;
 						   }
-					   } else {	// one channel contains only one dots
+					   } else {	//2x1 one channel contains only one dots
 						   flag = compare2x1(i);
 						   if (flag == 1) {
 							   linked[i][0] = obj4Dch0id1;

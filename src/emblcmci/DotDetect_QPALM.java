@@ -24,7 +24,7 @@ public class DotDetect_QPALM implements PlugIn {
  * 
  * @author miura
  * @param ImageProcessor ip
- *  @param frame index
+ *  @param nframe nframe the frame index corresponding to this image
  *  @param dotdiameter expected
  *  @param maxpart maximum number of iteration per frame
  *  @param snr signal to noise ratio, default is 2
