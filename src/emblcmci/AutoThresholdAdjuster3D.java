@@ -114,9 +114,20 @@ public class AutoThresholdAdjuster3D {
 		ImagePlus imp1 = WindowManager.getImage(wList[index[1]]);		
 		//cal.set
 		if (imp0 == null) return;
-		if (imp0.getStackSize() == 1) return;		
-		if (imp1.getStackSize() == 1) return;
+		if (imp0.getStackSize() == 1) {
+			IJ.error("Channel 0 is not a stack");
+			return;		
+		}
+		if (imp1.getStackSize() == 1) {
+			IJ.error("Channel 1 is not a stack");
+			return;
+		}
 		cal = imp0.getCalibration();
+		if (Double.isNaN(cal.pixelDepth)) {
+			IJ.error("Voxel Depth(z)is not defined correctly: check [Image -> properties]");
+			return;
+		}
+		
 		calkeep = cal.copy();
 		zfactor = cal.pixelDepth / cal.pixelWidth;
 		
