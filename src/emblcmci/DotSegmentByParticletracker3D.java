@@ -1,7 +1,12 @@
 package emblcmci;
 
+import java.awt.Choice;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
+
 import ij.IJ;
 import ij.ImagePlus;
+import ij.gui.GenericDialog;
 import ij.process.StackConverter;
 import ij.process.StackStatistics;
 import eth.track3D.ParticleTracker3D;
@@ -37,10 +42,54 @@ public class DotSegmentByParticletracker3D extends ParticleTracker3D{
 		super.displacement = 10.0; 	// default
 		super.preprocessing_mode = 3;//"none", "box-car avg.", "BG Subtraction", "Laplace Operation"}, "box-car avg.";
 	}
+	public boolean parameterDialog(){
+		gd = new GenericDialog("Particle Tracker...", IJ.getInstance());
+		gd.addMessage("Particle Detection:");			
+		// These 3 params are only relevant for non text_files_mode
+        gd.addNumericField("Radius", 3, 0);
+        gd.addNumericField("Cutoff", 3.0, 1);
+        gd.addChoice("Threshold mode", new String[]{"Absolute Threshold","Percentile"}, "Percentile");
+        ((Choice)gd.getChoices().firstElement()).addItemListener(new ItemListener(){
+			public void itemStateChanged(ItemEvent e) {
+				// TODO Auto-generated method stub
+				int mode = 0;
+				if(e.getItem().toString().equals("Absolute Threshold")) {
+					mode = ABS_THRESHOLD_MODE;						
+				}
+				if(e.getItem().toString().equals("Percentile")) {
+					mode = PERCENTILE_MODE;						
+				}
+				thresholdModeChanged(mode);
+			}});
+//        gd.addNumericField("Percentile", 0.001, 5);
+        gd.addNumericField("Percentile / Abs.Threshold", 0.1, 5, 6, " % / Intensity");
+        
+//        gd.addPanel(makeThresholdPanel(), GridBagConstraints.CENTER, new Insets(0, 0, 0, 0));
+        gd.addChoice("Preprocessing mode", new String[]{"none", "box-car avg.", "BG Subtraction", "Laplace Operation"}, "box-car avg.");	        
+        gd.showDialog();
+    	int rad = (int)gd.getNextNumber();
+//    	this.radius = (int)gd.getNextNumber();
+    	double cut = gd.getNextNumber(); 
+//        this.cutoff = gd.getNextNumber();   
+    	float per = ((float)gd.getNextNumber())/100;
+    	int intThreshold = (int)(per*100+0.5);
+//        this.percentile = ((float)gd.getNextNumber())/100;
+    	int thsmode = gd.getNextChoiceIndex();
+    	int mode = gd.getNextChoiceIndex();
+    	super.radius = rad;
+    	super.cutoff = cut;
+    	super.percentile = per;
+    	super.absIntensityThreshold = intThreshold;
+    	super.preprocessing_mode = mode;
+    	setThresholdMode(thsmode); 
+    	return true;
+	}
 	
-	public void DetectDots3D(ImagePlus imp){
-		setup("", imp);
-		InitiUserDefinedPara();
+	public String DetectDots3D(ImagePlus imp){
+		//setup("", imp);
+		//InitiUserDefinedPara();
+		//if (!parameterDialog()) return "-1";
+		
 		//momentum_from_text = false;
 		boolean convert = false;		
         // initialize ImageStack stack
@@ -76,19 +125,29 @@ public class DotSegmentByParticletracker3D extends ParticleTracker3D{
         }        
     	
 
-		/* detect particles and save to files*/
+		/* detect particles and store as string*/
+    	String particles = "";
 		if (this.processFrames()) { // process the frames
 			// for each frame - save the detected particles
 			for (int i = 0; i<this.frames.length; i++) {
-				IJ.log(this.frames[i].toString());
-				IJ.log(this.frames[i].getFullFrameInfo().toString());
-				
+				//IJ.log(this.frames[i].toString());
+				//IJ.log(this.frames[i].getFullFrameInfo().toString());
+				int particlenum = this.frames[i].getParticles().size();
+				//IJ.log("frame" + Integer.toString(i));
+				for (int j = 0; j < particlenum; j++) {
+					//IJ.log("\t" + this.frames[i].getParticles().elementAt(j).toString());
+					particles = particles + this.frames[i].getParticles().elementAt(j).toString();//+"\n";
+				}
 //				if (!write2File(sd.getDirectory(), sd.getFileName() + "_" + i, 
 //						this.frames[i].frameDetectedParticlesForSave(true).toString())) {
 //					// upon any problam savingto file - return
 //					return;
 			}
+			//IJ.log(particles);
 		}
+		//ImagePlus dot_imp = new ImagePlus("From text files", createStackFromTextFiles());
+		//dot_imp.show(); tried this but does not work since field value "max_coord" could not be set. 
+		return particles;
 	}
 }
 

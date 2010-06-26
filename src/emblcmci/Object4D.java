@@ -15,6 +15,9 @@ public class Object4D extends Object3D{
 	// ID of dots within a time frame. Starts from 1 (0 will be the initial value)
 	int dotID;
 	
+	// for storing image moments from the results of ParticleTracker3D
+	float m0, m1, m2, m3, m4, score;
+	
 	public Object4D(int size) {
 		super(size);
 		this.timepoint = 0;
@@ -40,6 +43,20 @@ public class Object4D extends Object3D{
 		this.timepoint = timepoint;
 		this.chnum = chnum;
 		this.dotID = dotID;
+	}
+	
+	public Object4D(int size, int timepoint, String chnum, int dotID, float[] centroid, float m0, float m1, float m2, float m3, float m4, float score){
+		super(size);
+		this.timepoint = timepoint;
+		this.chnum = chnum;
+		this.dotID = dotID;
+		super.centroid = centroid;
+		this.m0 = m0;
+		this.m1 = m1;
+		this.m2 = m2;
+		this.m3 = m3;
+		this.m4 = m4;
+		this.score = score;
 	}
 	
 	public void CopyObj3Dto4D(Object3D obj3D){
@@ -82,6 +99,9 @@ public class Object4D extends Object3D{
 	}
 	public void SetDotID(int dotID){
 		this.dotID = dotID;
+	}
+	public void setCentroid(float[] centroid){
+		this.centroid = centroid;
 	}
 	
 }

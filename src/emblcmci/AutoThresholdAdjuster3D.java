@@ -187,6 +187,8 @@ public class AutoThresholdAdjuster3D {
 	
 	public boolean segAndMeasure(ImagePlus imp0, ImagePlus imp1){
 		ImagePlus binimp0, binimp1;
+		obj4Dch0 = new Vector<Object4D>();
+		obj4Dch1 = new Vector<Object4D>();
 		//auto adjusted threshold segmentation
 		if (segMethod == 0) {		
 			binimp0 = segmentaitonByObjectSize(imp0);
@@ -202,17 +204,28 @@ public class AutoThresholdAdjuster3D {
 			} else {
 		//3D particle detection
 				if (segMethod == 2){			
-					IJ.log("Segmentation using Particle Tracker 3D is not implemented Yet");
+					IJ.log("Segmentation using Particle Tracker 3D is not completed Yet");
+					//particle tracker3D
+					DotSegmentByParticletracker3D dpt3D = new DotSegmentByParticletracker3D();
+					dpt3D.setup("", imp0);
+					if (!dpt3D.parameterDialog()) return false; //this line must be changed as parameter setter for particle3D
+					String particles = dpt3D.DetectDots3D(imp0);
+					IJ.log(particles);
+					//TODO here, string "particles" should be stored into Object4D format. 
+					//first convert strings in particles in each line to Object4D. 
+					//use constructor Object4D(int size, int timepoint, String chnum, int dotID, float[] centroid, float m0, float m1, float m2, float m3, float m4, float score)
+					//then use obj4dv.add(obj4d);
+					// use a new method storeParticleInfoInObj4D(String particles, Vector<Object4D> obj4dv)
+					//TODO there should be another process to generates bin stacks for visualization. 
 					return false;
 				} else return false;	
 			}
 		}
 		//binimp0.show();
 		//binimp1.show();
-		obj4Dch0 = new Vector<Object4D>();
-		obj4Dch1 = new Vector<Object4D>();
+
 		ImagePlus rgbbin=null;
-		if (createComposite) {
+		if ((segMethod != 2) && (createComposite)) {
 			ImagePlus ch0proj=null;
 			ImagePlus ch1proj=null;
 			ch0proj = createZprojTimeSeries(binimp0, imp0.getNSlices(), imp0.getNFrames());
@@ -225,13 +238,15 @@ public class AutoThresholdAdjuster3D {
 			
 		}
 		//3D object measurement part
-		
-		int ch0objnum = measureDots(binimp0, "Ch0", obj4Dch0, imp0.getNSlices());
-		showStatistics(obj4Dch0);
-		
-		int ch1objnum = measureDots(binimp1, "Ch1", obj4Dch1, imp1.getNSlices());
-		showStatistics(obj4Dch1);
-		
+		int ch0objnum = 0; 
+		int ch1objnum = 0;
+		if (segMethod != 2) { 
+			ch0objnum = measureDots(binimp0, "Ch0", obj4Dch0, imp0.getNSlices());
+			showStatistics(obj4Dch0);
+			
+			ch1objnum = measureDots(binimp1, "Ch1", obj4Dch1, imp1.getNSlices());
+			showStatistics(obj4Dch1);
+		} 
 		//analysis 
 		
 		Object4D[][] linkedArray = dotLinker(obj4Dch0,  obj4Dch1, imp0.getNFrames());
@@ -241,6 +256,33 @@ public class AutoThresholdAdjuster3D {
 		drawlinksGrayscale(linkedArray, imp0, imp1);
 		
 		return true; 
+	}
+	
+	void storeParticleInfoInObj4D(String particles, Vector<Object4D> obj4dv, String chnum){
+		String[] lines;
+		String line;
+		String[] frame_number_info;
+		lines = particles.split("\n");
+		int dummysize = 1;
+		for (int i = 0; i < lines.length; i++){
+			if (line == null) break;
+			line = lines[i].trim();
+	        frame_number_info = line.split("\\s+");			
+	        //if (frame_number_info[1] != null) {
+	        //	this.frame_number = Integer.parseInt(frame_number_info[1]);
+	        //}
+	        Object4D obj4d = new Object4D(dummysize, Integer.parseInt(frame_number_info[0]), chnum, i, float[] centroid, float m0, float m1, float m2, float m3, float m4, float score);
+		}
+        /* go over all lines, count number of particles and save the information as String */
+        while (true) {
+            line = r.readLine();		            
+            if (line == null) break;
+            line = line.trim();
+			if (line.startsWith("%"))	line = line.substring(1);
+			line = line.trim();
+			particles_info.addElement(line.split("\\s+"));
+			this.particles_number++;
+        }
 	}
 	
 	// to print out linked dots and infromation in log window. 
