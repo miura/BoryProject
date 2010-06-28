@@ -211,6 +211,7 @@ public class AutoThresholdAdjuster3D {
 					if (!dpt3D.parameterDialog()) return false; //this line must be changed as parameter setter for particle3D
 					String particles = dpt3D.DetectDots3D(imp0);
 					IJ.log(particles);
+					storeParticleInfoInObj4D(particles, obj4Dch0, "ch0");
 					//TODO here, string "particles" should be stored into Object4D format. 
 					//first convert strings in particles in each line to Object4D. 
 					//use constructor Object4D(int size, int timepoint, String chnum, int dotID, float[] centroid, float m0, float m1, float m2, float m3, float m4, float score)
@@ -265,16 +266,30 @@ public class AutoThresholdAdjuster3D {
 		lines = particles.split("\n");
 		int dummysize = 1;
 		for (int i = 0; i < lines.length; i++){
-			if (line == null) break;
+			if (lines[i] == null) break;
 			line = lines[i].trim();
-	        frame_number_info = line.split("\\s+");			
+	        frame_number_info = line.split("\\s+");
+	        //for (int j = 0; j < frame_number_info.length; j++) IJ.log(frame_number_info[j]);
+	        
 	        //if (frame_number_info[1] != null) {
 	        //	this.frame_number = Integer.parseInt(frame_number_info[1]);
 	        //}
-	        Object4D obj4d = new Object4D(dummysize, Integer.parseInt(frame_number_info[0]), chnum, i, float[] centroid, float m0, float m1, float m2, float m3, float m4, float score);
+	        int framenum = Integer.parseInt(frame_number_info[0]);
+	        float[] centroid = {0,0,0};
+	        for (int j =0; j < 3; j++) centroid[j]= Float.parseFloat(frame_number_info[j]);
+	      //  float centy = Float.parseFloat(frame_number_info[2]);
+	       // float centz = Float.parseFloat(frame_number_info[3]);
+	        float m0 = Float.parseFloat(frame_number_info[4]);
+	        float m1 = Float.parseFloat(frame_number_info[5]);
+	        float m2 = Float.parseFloat(frame_number_info[6]);
+	        float m3 = Float.parseFloat(frame_number_info[7]);
+	        float m4 = Float.parseFloat(frame_number_info[8]);
+	        float score = Float.parseFloat(frame_number_info[9]);
+	        	        
+	        Object4D obj4d = new Object4D(dummysize, framenum, chnum, i, centroid, m0, m1, m2, m3, m4, score);
 		}
         /* go over all lines, count number of particles and save the information as String */
-        while (true) {
+ /*       while (true) {
             line = r.readLine();		            
             if (line == null) break;
             line = line.trim();
@@ -283,7 +298,7 @@ public class AutoThresholdAdjuster3D {
 			particles_info.addElement(line.split("\\s+"));
 			this.particles_number++;
         }
-	}
+*/	}
 	
 	// to print out linked dots and infromation in log window. 
 	void linkresultsPrinter(Object4D[][] linkedArray){
