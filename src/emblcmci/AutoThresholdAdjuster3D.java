@@ -217,7 +217,7 @@ public class AutoThresholdAdjuster3D {
 					String particles = dpt3D.DetectDots3D(imp0);
 					storeParticleInfoInObj4D(particles, obj4Dch0, "ch0");
 					IJ.log(particles);
-					for (int i = 0; i < obj4Dch0.size(); i++) IJ.log("frame"+Integer.toString(obj4Dch0.get(i).timepoint) + ":"+ Float.toString(obj4Dch0.get(i).score));
+					//for (int i = 0; i < obj4Dch0.size(); i++) IJ.log("frame"+Integer.toString(obj4Dch0.get(i).timepoint) + ":"+ Float.toString(obj4Dch0.get(i).score));
 					IJ.log("--- channel1 ---");
 					DotSegmentByParticletracker3D dpt3D2 = new DotSegmentByParticletracker3D();
 					dpt3D2.setup("", imp1);
