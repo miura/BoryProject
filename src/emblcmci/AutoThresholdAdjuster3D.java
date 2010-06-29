@@ -268,6 +268,9 @@ public class AutoThresholdAdjuster3D {
 		showDistances(linkedArray);
 		 //if (rgbbin != null) drawlinks(linkedArray, rgbbin);
 		drawlinksGrayscale(linkedArray, imp0, imp1);
+		plotDetectedDots(obj4Dch0, imp0, Color.yellow);
+		plotDetectedDots(obj4Dch1, imp1, Color.red);
+		
 		
 		return true; 
 	}
@@ -387,9 +390,6 @@ public class AutoThresholdAdjuster3D {
 		new StackConverter(ch0proj).convertToRGB();
 		new StackConverter(ch1proj).convertToRGB();
 		
-		IJ.run("Colors...", "foreground=yellow background=white selection=yellow");
-		int ovalwidth = 1;
-		int ovalheight = 1;
 		int offset = 0;
 		int ch0x, ch0y, ch1x, ch1y;
 		for(int i = 0;  i < linked.length; i++) {
@@ -423,6 +423,32 @@ public class AutoThresholdAdjuster3D {
 		ImagePlus combimp = new ImagePlus("DetectedDots", combined);
 		
 		combimp.show();
+	}
+	/* for plotting Object4Ds detected by segmentation. 
+	 * Creates a new RGB 
+	 * imp  grayscale image
+	 */
+	public void plotDetectedDots(Vector<Object4D> obj4dv, ImagePlus imp, Color color){
+		Duplicator dup = new Duplicator();
+		ImagePlus dupimp = dup.run(imp);
+		new StackConverter(dupimp).convertToRGB();
+		float x, y, z;
+		int timepoint;
+		int nSlices = imp.getNSlices();
+		int nFrames = imp.getNFrames();
+		if (nFrames <= 1) return;
+		ImageProcessor ip = null;
+		for (int i = 0; i < obj4dv.size(); i++) {
+			x = obj4dv.get(i).centroid[0];
+			y = obj4dv.get(i).centroid[1];
+			z = obj4dv.get(i).centroid[2];
+			timepoint = obj4dv.get(i).timepoint;
+			ip = dupimp.getStack().getProcessor(timepoint * nSlices + Math.round(z)); //TODO
+			ip.setColor(color);
+			ip.drawPixel(Math.round(x), Math.round(y));
+		}
+		dupimp.show();
+		
 	}
 
 
