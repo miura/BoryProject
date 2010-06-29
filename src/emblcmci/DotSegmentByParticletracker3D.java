@@ -20,13 +20,13 @@ import eth.track3D.ParticleTracker3D.MyFrame;
 public class DotSegmentByParticletracker3D extends ParticleTracker3D{
 	//	getUserDefinedPreviewParams(); <- something simlar to this to set parameters are required
 	/* user defined parameters */
-//	public double cutoff = 3.0; 		// default
-//	public float percentile = 0.001F; 	// default (user input/100)
-//	public int absIntensityThreshold = 0; //user input 
-//	public int radius = 3; 				// default
-//	public int linkrange = 2; 			// default
-//	public double displacement = 10.0; 	// default
-
+	static double cutoff = 3.0; 		// default
+	static float percentile = 0.001F; 	// default (user input/100)
+	static int absIntensityThreshold = 0; //user input 
+	static int radius = 3; 				// default
+	static int linkrange = 2; 			// default
+	static double displacement = 10.0; 	// default
+	static int preprocessing_mode = 3;	//"none", "box-car avg.", "BG Subtraction", "Laplace Operation"}, "box-car avg.";
 	
 	public DotSegmentByParticletracker3D() {
 		super();
@@ -34,20 +34,20 @@ public class DotSegmentByParticletracker3D extends ParticleTracker3D{
 	}	
 
 	public void InitiUserDefinedPara(){
-		super.cutoff = 5.0; 		// default
-		super.percentile = 0.0001F; 	// default (user input/100)
-		super.absIntensityThreshold = 0; //user input 
-		super.radius = 2; 				// default
-		super.linkrange = 2; 			// default
-		super.displacement = 10.0; 	// default
-		super.preprocessing_mode = 3;//"none", "box-car avg.", "BG Subtraction", "Laplace Operation"}, "box-car avg.";
+		super.cutoff = cutoff; 		// default
+		super.percentile = percentile; 	// default (user input/100)
+		super.absIntensityThreshold = absIntensityThreshold; //user input 
+		super.radius = radius; 				// default
+		super.linkrange = linkrange; 			// default
+		super.displacement = displacement; 	// default
+		super.preprocessing_mode = preprocessing_mode;
 	}
 	public boolean parameterDialog(){
 		gd = new GenericDialog("Particle Tracker...", IJ.getInstance());
 		gd.addMessage("Particle Detection:");			
 		// These 3 params are only relevant for non text_files_mode
-        gd.addNumericField("Radius", 3, 0);
-        gd.addNumericField("Cutoff", 3.0, 1);
+        gd.addNumericField("Radius", radius, 0);
+        gd.addNumericField("Cutoff", cutoff, 1);
         gd.addChoice("Threshold mode", new String[]{"Absolute Threshold","Percentile"}, "Percentile");
         ((Choice)gd.getChoices().firstElement()).addItemListener(new ItemListener(){
 			public void itemStateChanged(ItemEvent e) {
@@ -65,22 +65,19 @@ public class DotSegmentByParticletracker3D extends ParticleTracker3D{
         gd.addNumericField("Percentile / Abs.Threshold", 0.1, 5, 6, " % / Intensity");
         
 //        gd.addPanel(makeThresholdPanel(), GridBagConstraints.CENTER, new Insets(0, 0, 0, 0));
-        gd.addChoice("Preprocessing mode", new String[]{"none", "box-car avg.", "BG Subtraction", "Laplace Operation"}, "box-car avg.");	        
+        gd.addChoice("Preprocessing mode", new String[]{"none", "box-car avg.", "BG Subtraction", "Laplace Operation"}, "Laplace Operation");	        
         gd.showDialog();
-    	int rad = (int)gd.getNextNumber();
-//    	this.radius = (int)gd.getNextNumber();
-    	double cut = gd.getNextNumber(); 
-//        this.cutoff = gd.getNextNumber();   
-    	float per = ((float)gd.getNextNumber())/100;
-    	int intThreshold = (int)(per*100+0.5);
-//        this.percentile = ((float)gd.getNextNumber())/100;
+    	radius = (int)gd.getNextNumber();
+    	cutoff = gd.getNextNumber(); 
+    	percentile = ((float)gd.getNextNumber())/100;
+    	absIntensityThreshold = (int)(percentile*100+0.5);
     	int thsmode = gd.getNextChoiceIndex();
-    	int mode = gd.getNextChoiceIndex();
-    	super.radius = rad;
-    	super.cutoff = cut;
-    	super.percentile = per;
-    	super.absIntensityThreshold = intThreshold;
-    	super.preprocessing_mode = mode;
+    	preprocessing_mode = gd.getNextChoiceIndex();
+    	super.radius = radius;
+    	super.cutoff = cutoff;
+    	super.percentile = percentile;
+    	super.absIntensityThreshold = absIntensityThreshold;
+    	super.preprocessing_mode = preprocessing_mode;
     	setThresholdMode(thsmode); 
     	return true;
 	}

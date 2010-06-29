@@ -106,6 +106,10 @@ public class ParamSetter{
 			IJ.log("Data for Ch1 will be laoded from " + getTrainedDataFullPath1() + "...");
 
 		}
+		if (segMethod == 2) {
+			DotSegmentByParticletracker3D param = new DotSegmentByParticletracker3D();
+			if (!param.parameterDialog()) return false;
+		}
 		return true;
 	}
 

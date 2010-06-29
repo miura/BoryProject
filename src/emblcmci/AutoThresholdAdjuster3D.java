@@ -207,18 +207,31 @@ public class AutoThresholdAdjuster3D {
 					IJ.log("Segmentation using Particle Tracker 3D is not completed Yet");
 					//particle tracker3D
 					DotSegmentByParticletracker3D dpt3D = new DotSegmentByParticletracker3D();
+					IJ.log("--- channel0 ---");
 					dpt3D.setup("", imp0);
-					if (!dpt3D.parameterDialog()) return false; //this line must be changed as parameter setter for particle3D
+					dpt3D.InitiUserDefinedPara();
+					IJ.log("Radius:" + Double.toString(dpt3D.radius));
+					IJ.log("Cutoff:" + Double.toString(dpt3D.cutoff));
+					IJ.log("Percentile:" + Double.toString(dpt3D.percentile));	
+					//if (!dpt3D.parameterDialog()) return false; //this line must be changed as parameter setter for particle3D
 					String particles = dpt3D.DetectDots3D(imp0);
-					IJ.log(particles);
 					storeParticleInfoInObj4D(particles, obj4Dch0, "ch0");
-					//TODO here, string "particles" should be stored into Object4D format. 
-					//first convert strings in particles in each line to Object4D. 
-					//use constructor Object4D(int size, int timepoint, String chnum, int dotID, float[] centroid, float m0, float m1, float m2, float m3, float m4, float score)
-					//then use obj4dv.add(obj4d);
-					// use a new method storeParticleInfoInObj4D(String particles, Vector<Object4D> obj4dv)
+					IJ.log(particles);
+					for (int i = 0; i < obj4Dch0.size(); i++) IJ.log("frame"+Integer.toString(obj4Dch0.get(i).timepoint) + ":"+ Float.toString(obj4Dch0.get(i).score));
+					IJ.log("--- channel1 ---");
+					DotSegmentByParticletracker3D dpt3D2 = new DotSegmentByParticletracker3D();
+					dpt3D2.setup("", imp1);
+					dpt3D2.InitiUserDefinedPara();
+					IJ.log("Radius:" + Double.toString(dpt3D2.radius));
+					IJ.log("Cutoff:" + Double.toString(dpt3D2.cutoff));
+					IJ.log("Percentile:" + Double.toString(dpt3D2.percentile));					
+					particles = dpt3D2.DetectDots3D(imp1);
+					storeParticleInfoInObj4D(particles, obj4Dch1, "ch1");
+					IJ.log(particles);
 					//TODO there should be another process to generates bin stacks for visualization. 
-					return false;
+					//return false;
+					binimp0 = null;
+					binimp1 = null;
 				} else return false;	
 			}
 		}
@@ -226,6 +239,7 @@ public class AutoThresholdAdjuster3D {
 		//binimp1.show();
 
 		ImagePlus rgbbin=null;
+		/* in case of particle 3D, no binary images are produced so no composite image. */
 		if ((segMethod != 2) && (createComposite)) {
 			ImagePlus ch0proj=null;
 			ImagePlus ch1proj=null;
@@ -243,11 +257,10 @@ public class AutoThresholdAdjuster3D {
 		int ch1objnum = 0;
 		if (segMethod != 2) { 
 			ch0objnum = measureDots(binimp0, "Ch0", obj4Dch0, imp0.getNSlices());
-			showStatistics(obj4Dch0);
-			
 			ch1objnum = measureDots(binimp1, "Ch1", obj4Dch1, imp1.getNSlices());
-			showStatistics(obj4Dch1);
 		} 
+		showStatistics(obj4Dch0);
+		showStatistics(obj4Dch1);		
 		//analysis 
 		
 		Object4D[][] linkedArray = dotLinker(obj4Dch0,  obj4Dch1, imp0.getNFrames());
@@ -258,27 +271,37 @@ public class AutoThresholdAdjuster3D {
 		
 		return true; 
 	}
-	
+	/** Stores particle parameters (centroid coordinates, moments) in String form derived from 
+	 * particle3D plugin is stored in Object4D array
+	 * @param particles String variable exported from particle3D plugin
+	 * @param obj4dv Vector<Object4D> to store all detected particles
+	 * @param chnum String indicating the name of channel
+	 */
 	void storeParticleInfoInObj4D(String particles, Vector<Object4D> obj4dv, String chnum){
 		String[] lines;
 		String line;
 		String[] frame_number_info;
 		lines = particles.split("\n");
+		int currentframe = 0;
+		int dotID = 1;
 		int dummysize = 1;
 		for (int i = 0; i < lines.length; i++){
 			if (lines[i] == null) break;
 			line = lines[i].trim();
 	        frame_number_info = line.split("\\s+");
-	        //for (int j = 0; j < frame_number_info.length; j++) IJ.log(frame_number_info[j]);
-	        
-	        //if (frame_number_info[1] != null) {
-	        //	this.frame_number = Integer.parseInt(frame_number_info[1]);
-	        //}
+	        //for (int j = 0; j < frame_number_info.length; j++) IJ.log(frame_number_info[j]);	        
 	        int framenum = Integer.parseInt(frame_number_info[0]);
-	        float[] centroid = {0,0,0};
-	        for (int j =0; j < 3; j++) centroid[j]= Float.parseFloat(frame_number_info[j]);
-	      //  float centy = Float.parseFloat(frame_number_info[2]);
-	       // float centz = Float.parseFloat(frame_number_info[3]);
+	        if (framenum != currentframe) {
+	        	dotID = 1;
+	        	currentframe = framenum;
+	        }
+	        else dotID++;
+	        
+	        float[] centroid = {0, 0, 0};
+	        //for (int j =0; j < 3; j++) 
+	        centroid[0]= Float.parseFloat(frame_number_info[2]); //xy order is opposite
+	        centroid[1]= Float.parseFloat(frame_number_info[1]);
+	        centroid[2]= Float.parseFloat(frame_number_info[3]);
 	        float m0 = Float.parseFloat(frame_number_info[4]);
 	        float m1 = Float.parseFloat(frame_number_info[5]);
 	        float m2 = Float.parseFloat(frame_number_info[6]);
@@ -286,8 +309,10 @@ public class AutoThresholdAdjuster3D {
 	        float m4 = Float.parseFloat(frame_number_info[8]);
 	        float score = Float.parseFloat(frame_number_info[9]);
 	        	        
-	        Object4D obj4d = new Object4D(dummysize, framenum, chnum, i, centroid, m0, m1, m2, m3, m4, score);
+	        Object4D obj4d = new Object4D(dummysize, framenum, chnum, dotID, centroid, m0, m1, m2, m3, m4, score);
+	        obj4dv.add(obj4d);
 		}
+		sortbyScore(obj4dv);
         /* go over all lines, count number of particles and save the information as String */
  /*       while (true) {
             line = r.readLine();		            
@@ -299,6 +324,30 @@ public class AutoThresholdAdjuster3D {
 			this.particles_number++;
         }
 */	}
+	
+	void sortbyScore(Vector<Object4D> obj4dv){
+		
+		int currentframe = 0;
+		int counter = 0;
+		Vector<Object4D> obj4dVpertime = new Vector<Object4D>();
+		for (int i = 0; i < obj4dv.size(); i++){
+			if ((i == 0) || (obj4dv.get(i).timepoint != currentframe)){
+				currentframe = obj4dv.get(i).timepoint;
+				for (int j = 0; j < obj4dv.size(); j++){
+					if (obj4dv.get(j).timepoint == currentframe) {
+						obj4dVpertime.add(obj4dv.get(j));
+					}
+				}
+				Collections.sort(obj4dVpertime,  new ComparerByscore4D(ComparerByscore4D.DESC));
+				for (int j = 0; j < obj4dVpertime.size(); j++){
+					obj4dv.setElementAt(obj4dVpertime.get(j), counter);
+					//IJ.log(Integer.toString(obj4dVpertime.get(j).dotID));
+					counter++;
+				}
+				obj4dVpertime.clear();
+			}
+		}	
+	}
 	
 	// to print out linked dots and infromation in log window. 
 	void linkresultsPrinter(Object4D[][] linkedArray){
@@ -771,6 +820,33 @@ class ComparerBysize3D implements Comparator<Object3D> {
             i = 0;
         if (obj3d1.size > obj3d2.size)
             i = 1*sort;
+        return i;
+    }
+}
+
+//for sorting Object4D, descending order by score (of none-particle criteria)
+class ComparerByscore4D implements Comparator<Object4D> {
+	public static final int ASC = 1;
+	public static final int DESC = -1;
+	private int sort = ASC;
+	
+	public ComparerByscore4D(){
+	}
+	
+	public ComparerByscore4D(int sort){
+		this.sort = sort;
+	}	
+	
+    public int compare(Object4D o1, Object4D o2) {
+        Object4D obj4d1 = (Object4D) o1;
+        Object4D obj4d2 = (Object4D) o2;
+        int i = 0;
+        if (obj4d1.score < obj4d2.score) 
+            i = -1 * sort;
+        if (obj4d1.score == obj4d2.score)
+            i = 0;
+        if (obj4d1.score > obj4d2.score)
+            i = 1 * sort;
         return i;
     }
 }
