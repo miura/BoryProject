@@ -222,6 +222,7 @@ public class AutoThresholdAdjuster3D {
 					DotSegmentByParticletracker3D dpt3D2 = new DotSegmentByParticletracker3D();
 					dpt3D2.setup("", imp1);
 					dpt3D2.InitiUserDefinedPara();
+					// at least percentile should be able to be controlled differently from ch1
 					IJ.log("Radius:" + Double.toString(dpt3D2.radius));
 					IJ.log("Cutoff:" + Double.toString(dpt3D2.cutoff));
 					IJ.log("Percentile:" + Double.toString(dpt3D2.percentile));					
@@ -298,7 +299,7 @@ public class AutoThresholdAdjuster3D {
 	        	dotID = 1;
 	        	currentframe = framenum;
 	        }
-	        else dotID++;
+	        
 	        
 	        float[] centroid = {0, 0, 0};
 	        //for (int j =0; j < 3; j++) 
@@ -314,6 +315,7 @@ public class AutoThresholdAdjuster3D {
 	        	        
 	        Object4D obj4d = new Object4D(dummysize, framenum, chnum, dotID, centroid, m0, m1, m2, m3, m4, score);
 	        obj4dv.add(obj4d);
+	        dotID++;
 		}
 		sortbyScore(obj4dv);
         /* go over all lines, count number of particles and save the information as String */
@@ -644,7 +646,10 @@ public class AutoThresholdAdjuster3D {
 		 	+" : IntDen"+Float.toString(cObj.int_dens);
 		 return opt;
 	}
-
+		/**Show content of Object4D vector in Results window. 
+		 * 
+		 * @param obj4Dv Vector<Object4D>
+		 */
 	   public void showStatistics(Vector<Object4D> obj4Dv){
 	        ResultsTable rt;        
 	        rt=new ResultsTable();	        
@@ -652,6 +657,7 @@ public class AutoThresholdAdjuster3D {
 	            if (obj4Dv.get(i).centroid.length > 1){
 	            	rt.incrementCounter();
 	            	rt.setValue("frame", i, obj4Dv.get(i).timepoint);
+	            	rt.setValue("dotID", i, obj4Dv.get(i).dotID);
 	            	rt.setValue("Volume", i, obj4Dv.get(i).size);
 	            	rt.setValue("x", i, obj4Dv.get(i).centroid[0]);
 		            rt.setValue("y", i, obj4Dv.get(i).centroid[1]);
