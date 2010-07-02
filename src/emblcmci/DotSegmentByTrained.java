@@ -97,24 +97,24 @@ public class DotSegmentByTrained {
 
 		ImageStack stack = imp.getStack();
 
-		ImagePlus imptemp = new ImagePlus("working slice", new ByteProcessor(imp.getWidth(), imp.getHeight()));
+		ImagePlus imptemp = new ImagePlus("training slice", new ByteProcessor(imp.getWidth(), imp.getHeight()));
 		ImageProcessor ipc = imptemp.getProcessor();// = imp.getProcessor().duplicate();		
-		//ImageStack binstack = imp.createEmptyStack();
 		String fullpath;
 		fullpath = fullpathdata;
 
 		ipc = stack.getProcessor(1).duplicate();
-		//Ignacio's update
+		//using Ignacio's update
 		Trainable_Segmentation seg = new Trainable_Segmentation(new ImagePlus("temp", ipc));
-		//this corresponds to "Load Data" button
+		//"Load Data" button
 		seg.loadTrainingData(fullpath);
+		//"Train classifier" button
 		try{
 			seg.trainClassifier();
 		}catch(Exception e){
 			e.printStackTrace();
 		}
+		//"Apply Classifier" button
 		ImagePlus binimp = seg.applyClassifierToTestImage(imp);
-		//imp.show();
 				
 		return binimp;
 		
