@@ -31,7 +31,6 @@ import weka.core.OptionHandler;
 import weka.core.Utils;
 import weka.core.WeightedInstancesHandler;
 import weka.core.Capabilities.Capability;
-
 import java.util.Random;
 import weka.core.RevisionUtils;
 

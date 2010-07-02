@@ -23,7 +23,6 @@
 
 package hr.irb.fastRandomForest;
 
-
 import java.util.ArrayList;
 import weka.classifiers.RandomizableIteratedSingleClassifierEnhancer;
 import weka.core.AdditionalMeasureProducer;

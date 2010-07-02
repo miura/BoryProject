@@ -935,14 +935,16 @@ public class Trainable_Segmentation implements PlugIn
 							
 							int n2 = width;
 							do {								
-								double[] values = new double[featureStack.getSize()+1];
-								for (int z=1; z<=featureStack.getSize(); z++)
-									values[z-1] = featureStack.getProcessor(z).getInterpolatedValue(x, y);
-								values[featureStack.getSize()] = (double) l;
-								trainingData.add(new DenseInstance(1.0, values));
-								// increase number of instances for this class
-								nl ++;
-																
+								if(x >= 0 && x < featureStack.getWidth() && y >= 0 && y <featureStack.getHeight())
+								{
+									double[] values = new double[featureStack.getSize()+1];
+									for (int z=1; z<=featureStack.getSize(); z++)
+										values[z-1] = featureStack.getProcessor(z).getInterpolatedValue(x, y);
+									values[featureStack.getSize()] = (double) l;
+									trainingData.add(new DenseInstance(1.0, values));
+									// increase number of instances for this class
+									nl ++;
+								}						
 								x += dy;
 								y += dx;
 							} while (--n2>0);
@@ -1057,7 +1059,7 @@ public class Trainable_Segmentation implements PlugIn
 		if(updateWholeData)
 		{
 			updateTestSet();
-			IJ.log("Test dataset updated ("+ wholeImageData.numInstances() + " instances)");
+			IJ.log("Test dataset updated ("+ wholeImageData.numInstances() + " instances, " + wholeImageData.numAttributes() + " attributes).");
 		}
 
 		IJ.log("Classifying whole image...");
@@ -1325,46 +1327,23 @@ public class Trainable_Segmentation implements PlugIn
 
 		setButtonsEnabled(false);
 
-		if (testImage.getImageStackSize() == 1){
-			applyClassifierToTestImage(testImage).show();
-			testImage.show();
-		}
-		else{
-			ImageStack testImageStack = testImage.getStack();
-			ImageStack testStackClassified = new ImageStack(testImageStack.getWidth(), testImageStack.getHeight());
-			IJ.log("Size: " + testImageStack.getSize() + " " + testImageStack.getWidth() + " " + testImageStack.getHeight());
-			for (int i=1; i<=testImageStack.getSize(); i++){
-				IJ.log("Classifying image " + i + "...");
-				ImagePlus currentSlice = new ImagePlus(testImageStack.getSliceLabel(i),testImageStack.getProcessor(i).duplicate());
-				//applyClassifierToTestImage(currentSlice).show();
-				testStackClassified.addSlice(currentSlice.getTitle(), applyClassifierToTestImage(currentSlice).getProcessor().duplicate());
-			}
-			testImage.show();
-			ImagePlus showStack = new ImagePlus("Classified Stack", testStackClassified);
-			showStack.show();
-		}
+		applyClassifierToTestImage(testImage).show();
+		testImage.show();
+		
 		setButtonsEnabled(true);
 	}
 
 	/**
 	 * Apply current classifier to image
-	 * @param testImage test image
-	 * @return result image
+	 * 
+	 * @param testImage test image (2D single image or stack)
+	 * @return result image (classification)
 	 */
 	public ImagePlus applyClassifierToTestImage(ImagePlus testImage)
-	{
-		testImage.setProcessor(testImage.getProcessor().convertToByte(true));
-
-		// Create feature stack for test image
-		IJ.showStatus("Creating features for test image...");
-		final FeatureStack testImageFeatures = new FeatureStack(testImage);
-		// Use the same features as the current classifier
-		testImageFeatures.setEnableFeatures(featureStack.getEnableFeatures());
-		testImageFeatures.updateFeatures();
-
+	{		
 		// Set proper class names (skip empty list ones)
 		ArrayList<String> classNames = new ArrayList<String>();
-		if(loadedTrainingData == null)
+		if( null == loadedClassNames )
 		{
 			for(int i = 0; i < numOfClasses; i++)
 				if(examples[i].size() > 0)
@@ -1373,14 +1352,29 @@ public class Trainable_Segmentation implements PlugIn
 		else
 			classNames = loadedClassNames;
 		
-		final Instances testData = testImageFeatures.createInstances(classNames);
-		testData.setClassIndex(testData.numAttributes() - 1);
+		final ImageStack classified = new ImageStack(testImage.getWidth(), testImage.getHeight());
+		
+		for(int i=1; i<=testImage.getStackSize(); i++)
+		{
+			final ImagePlus testSlice = new ImagePlus(testImage.getImageStack().getSliceLabel(i), testImage.getImageStack().getProcessor(i).convertToByte(true));
+			// Create feature stack for test image
+			IJ.showStatus("Creating features for test image...");
+			IJ.log("Creating features for test image " + i +  "...");
+			final FeatureStack testImageFeatures = new FeatureStack(testSlice);
+			// Use the same features as the current classifier
+			testImageFeatures.setEnableFeatures(featureStack.getEnableFeatures());
+			testImageFeatures.updateFeatures();
 
-		final ImagePlus testClassImage = applyClassifier(testData, testImage.getWidth(), testImage.getHeight());
-		testClassImage.setTitle("classified_" + testImage.getTitle());
-		testClassImage.setProcessor(testClassImage.getProcessor().convertToByte(true).duplicate());
+			final Instances testData = testImageFeatures.createInstances(classNames);
+			testData.setClassIndex(testData.numAttributes() - 1);
 
-		return testClassImage;
+			final ImagePlus testClassImage = applyClassifier(testData, testSlice.getWidth(), testSlice.getHeight());
+			testClassImage.setTitle("classified_" + testSlice.getTitle());
+			testClassImage.setProcessor(testClassImage.getProcessor().convertToByte(true).duplicate());
+			classified.addSlice(testClassImage.getTitle(), testClassImage.getProcessor());
+		}
+		
+		return new ImagePlus("Classification result", classified);
 	}
 
 	/**
@@ -1753,7 +1747,7 @@ public class Trainable_Segmentation implements PlugIn
 		
 		// Update list of names of loaded classes
 		loadedClassNames = new ArrayList<String>();
-		
+	
 		int j = 0;
 		while(classValues.hasMoreElements())
 		{
@@ -1779,8 +1773,8 @@ public class Trainable_Segmentation implements PlugIn
 			loadedTrainingData = null;
 			return false;
 		}
-		
-		IJ.log("Loaded data: " + loadedTrainingData.numInstances() + " instances");
+
+		IJ.log("Loaded data: " + loadedTrainingData.numInstances() + " instances, " + loadedTrainingData.numAttributes() + " attributes.");
 		
 		boolean featuresChanged = false;
 		final boolean[] oldEnableFeatures = this.featureStack.getEnableFeatures();
