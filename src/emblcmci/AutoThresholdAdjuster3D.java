@@ -281,7 +281,7 @@ public class AutoThresholdAdjuster3D {
 	 * @param obj4dv Vector<Object4D> to store all detected particles
 	 * @param chnum String indicating the name of channel
 	 */
-	void storeParticleInfoInObj4D(String particles, Vector<Object4D> obj4dv, String chnum){
+	public void storeParticleInfoInObj4D(String particles, Vector<Object4D> obj4dv, String chnum){
 		String[] lines;
 		String line;
 		String[] frame_number_info;

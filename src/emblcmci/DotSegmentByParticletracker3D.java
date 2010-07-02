@@ -31,7 +31,17 @@ public class DotSegmentByParticletracker3D extends ParticleTracker3D{
 	public DotSegmentByParticletracker3D() {
 		super();
 		// TODO Auto-generated constructor stub
-	}	
+	}
+
+	public DotSegmentByParticletracker3D(double raidus, double cutoff, float percentile) {
+		super();
+		InitiUserDefinedPara();
+		this.radius = radius;
+		this.cutoff = cutoff;
+		this.percentile = percentile;
+		
+		// TODO Auto-generated constructor stub
+	}
 
 	public void InitiUserDefinedPara(){
 		super.cutoff = cutoff; 		// default
