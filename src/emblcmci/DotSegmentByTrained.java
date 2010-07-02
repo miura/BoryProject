@@ -42,7 +42,12 @@ public class DotSegmentByTrained {
 		return fullpathdata;
 	}
 	
-	// this could be called easily from automated routine in Macro. 
+	
+	/** sets path to the trained data .aiff
+	 * 
+	 *  this could be called easily from automated routine in Macro. 
+	 * @param fullpath
+	 */
 	public static void setDatapath(String fullpath){
 		fullpathdata = fullpath;
 		IJ.log("Loading data from " + fullpathdata + "...");
@@ -94,30 +99,24 @@ public class DotSegmentByTrained {
 
 		ImagePlus imptemp = new ImagePlus("working slice", new ByteProcessor(imp.getWidth(), imp.getHeight()));
 		ImageProcessor ipc = imptemp.getProcessor();// = imp.getProcessor().duplicate();		
-		ImageStack binstack = imp.createEmptyStack();
+		//ImageStack binstack = imp.createEmptyStack();
 		String fullpath;
 		fullpath = fullpathdata;
-		for (int i=0; i<stack.getSize(); i++){
-			ipc = stack.getProcessor(i+1).duplicate();
-			//Ignacio's update
-			Trainable_Segmentation seg = new Trainable_Segmentation(new ImagePlus("temp"+i, ipc));
-			seg.loadTrainingData(fullpath);
 
-
-//				try{
-//					trainer.trainClassifier();
-//				}catch(Exception e){
-//					e.printStackTrace();
-//				}
+		ipc = stack.getProcessor(1).duplicate();
+		//Ignacio's update
+		Trainable_Segmentation seg = new Trainable_Segmentation(new ImagePlus("temp", ipc));
+		//this corresponds to "Load Data" button
+		seg.loadTrainingData(fullpath);
+		try{
 			seg.trainClassifier();
-			IJ.log("trained segmentation of slice="+Integer.toString(i)+" finished");
-			binstack.addSlice("n="+Integer.toString(i), seg.getClassifiedImage().getProcessor().convertToByte(true).duplicate(), i);
-		    System.gc(); 	
-		}	
-			//trainer.showClassificationImage2();
-		
-		ImagePlus resultImage = new ImagePlus("classification result", binstack);
-		return resultImage;
+		}catch(Exception e){
+			e.printStackTrace();
+		}
+		ImagePlus binimp = seg.applyClassifierToTestImage(imp);
+		//imp.show();
+				
+		return binimp;
 		
 	}
 	public static String testmacrocall(String logtext){
