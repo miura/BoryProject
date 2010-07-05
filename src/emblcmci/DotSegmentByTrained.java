@@ -2,7 +2,8 @@ package emblcmci;
 
 /** Segmentation of Chromosome dots using trained aiff data 
  * by Trainable_Segmentation without GUI. 
- * 
+ * TODO check how preferences for feature extraction is set. 
+ * When data is loaded, the setting could be default values. 
  * @author Kota Miura
  * @author CMCI EMBL
  */
