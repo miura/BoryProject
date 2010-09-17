@@ -38,7 +38,8 @@ public class PreprocessChromosomeDots {
 		sc.convertToGray8();
 		//IJ.run(imp, "8-bit", "");
 		fftbandPssSpec(imp);
-		new BleachCorrection_MH().bleachCorrectionHM(imp);
+		BleachCorrection_MH BMH = new BleachCorrection_MH(imp);
+		BMH.doCorrection();
 		//imp.show();
 	}
 	public void setFFTparameters(int fl, int fs, int tol, String sups){
