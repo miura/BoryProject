@@ -62,20 +62,20 @@ public class ParamSetter{
 
 	public boolean showDialog()	{
 		GenericDialog gd = new GenericDialog("Chromosome Dots Measurement");
-		gd.addChoice("Segmentation Method :", segMethods , segMethods[segMethod]);
-		gd.addNumericField("Min Spot Size for Segmentation (3Dobject) :", this.getMinspotvoxels(), 0);
-		gd.addNumericField("Min Spot Size for measurmeents (3Dobject) :", this.getMinspotvoxels_measure(), 0);
-		gd.addNumericField("Max Spot Size for Segmentation (3Dobject) :", this.getMaxspotvoxels(), 0);
+		gd.addChoice("Segmentation_Method :", segMethods , segMethods[segMethod]);
+		gd.addNumericField("Segmentation_Min Spot Size  (3Dobject) :", this.getMinspotvoxels(), 0);
+		gd.addNumericField("Measurmeents Min Spot Size  (3Dobject) :", this.getMinspotvoxels_measure(), 0);
+		gd.addNumericField("Segmentation_Max Spot Size for  (3Dobject) :", this.getMaxspotvoxels(), 0);
 
 		gd.addMessage("------ Adjustment Loop ------");
 		
-		gd.addNumericField("Min Volume Sum for Segmentation :", this.getThadj_volmin(), 0);
-		gd.addNumericField("Max Volume Sum for Segmentation :", this.getThadj_volmax(), 0);
-		gd.addNumericField("Min Object Number for Segmentation :", this.getThadj_nummin(), 0);
-		gd.addNumericField("Max Object Number for Segmentation :", this.getThadj_nummax(), 0);
+		gd.addNumericField("Min_Volume Sum for Segmentation :", this.getThadj_volmin(), 0);
+		gd.addNumericField("Max_Volume Sum for Segmentation :", this.getThadj_volmax(), 0);
+		gd.addNumericField("Min_Object Number for Segmentation :", this.getThadj_nummin(), 0);
+		gd.addNumericField("Max_Object Number for Segmentation :", this.getThadj_nummax(), 0);
 		
 		gd.addMessage("------ Advanced Options ------");
-		gd.addNumericField("Maximum Loop exit for threshold adjustment :", this.getMaxloops(), 0);
+		gd.addNumericField("Maximum_Loop_exit for threshold adjustment :", this.getMaxloops(), 0);
 		
 		gd.showDialog();
 		if (gd.wasCanceled()) 
@@ -93,13 +93,13 @@ public class ParamSetter{
 		this.setMaxloops((int) gd.getNextNumber());
 		
 		if (segMethod == 1) {
-			OpenDialog od0 = new OpenDialog("Choose ch0 data file","");
+			OpenDialog od0 = new OpenDialog("ch0 data file","");
 			if (od0.getFileName()==null)
 				return false;
 			trainedDataFullPath0 = od0.getDirectory() + od0.getFileName();
 			IJ.log("Data for Ch0 will be laoded from " + trainedDataFullPath0 + "...");
 
-			OpenDialog od1 = new OpenDialog("Choose ch1 data file","");
+			OpenDialog od1 = new OpenDialog("ch1 data file","");
 			if (od1.getFileName()==null)
 				return false;
 			setTrainedDataFullPath1(od1.getDirectory() + od1.getFileName());
