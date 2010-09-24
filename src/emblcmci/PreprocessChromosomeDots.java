@@ -44,7 +44,12 @@ public class PreprocessChromosomeDots {
 		StackConverter sc = new StackConverter(imp);
 		sc.convertToGray8();
 		//IJ.run(imp, "8-bit", "");
-		fftbandPssSpec(imp);
+
+		//TODO
+		//FFTFilter_NoDialog.setparam(filterlarge, filtersmall, 0, tolerance, true, false, false, true);
+		//fftbandPssSpec(imp);
+		FFTFilter_NoDialog FFTbp = new FFTFilter_NoDialog(imp);
+		
 		BleachCorrection_MH BMH = new BleachCorrection_MH(imp);
 		BMH.doCorrection();
 		imp.show();
@@ -66,6 +71,8 @@ public class PreprocessChromosomeDots {
 		IJ.run(imp, "Bandpass Filter...", fftargument); 		
 	}
 
+// Following added for headless computing. 
+	
 	//from contrast enhancer
 	public void stretchStackHistogram(ImagePlus imp, double saturated) {
 		
