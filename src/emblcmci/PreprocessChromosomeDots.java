@@ -11,11 +11,15 @@ package emblcmci;
 
 import ij.IJ;
 import ij.ImagePlus;
+import ij.ImageStack;
 import ij.WindowManager;
 import ij.plugin.Duplicator;
 import ij.plugin.PlugIn;
 import ij.process.ImageConverter;
+import ij.process.ImageProcessor;
+import ij.process.ImageStatistics;
 import ij.process.StackConverter;
+import ij.process.StackStatistics;
 
 public class PreprocessChromosomeDots {
 	//FFT parameters
@@ -33,14 +37,17 @@ public class PreprocessChromosomeDots {
 			imp = new Duplicator().run(WindowManager.getCurrentImage());
 		if (null == imp) return;
 		ImageConverter.setDoScaling(true);
-		IJ.run(imp, "Enhance Contrast", "saturated=0.001 use");
+		//IJ.run(imp, "Enhance Contrast", "saturated=0.001 use");
+		stretchStackHistogram(imp,0.001);
+		imp.updateAndDraw();
+		
 		StackConverter sc = new StackConverter(imp);
 		sc.convertToGray8();
 		//IJ.run(imp, "8-bit", "");
 		fftbandPssSpec(imp);
 		BleachCorrection_MH BMH = new BleachCorrection_MH(imp);
 		BMH.doCorrection();
-		//imp.show();
+		imp.show();
 	}
 	public void setFFTparameters(int fl, int fs, int tol, String sups){
 		filterlarge = fl;
@@ -57,6 +64,64 @@ public class PreprocessChromosomeDots {
 						+" process";
 		IJ.log(fftargument);
 		IJ.run(imp, "Bandpass Filter...", fftargument); 		
+	}
+
+	//from contrast enhancer
+	public void stretchStackHistogram(ImagePlus imp, double saturated) {
+		
+		int stackSize = imp.getStackSize();
+		ImageStatistics stats = null;
+		stats = new StackStatistics(imp);
+		ImageStack stack = imp.getStack();
+		for (int i=1; i<=stackSize; i++) {
+			IJ.showProgress(i, stackSize);
+			ImageProcessor ip = stack.getProcessor(i);
+			stretchHistogram(ip, saturated, stats);
+		}
+	}
+
+	//modified (simplified) version of ContrastEnhancer
+	public void stretchHistogram(ImageProcessor ip, double saturated, ImageStatistics stats) {		
+		int[] a = getMinAndMax(ip, saturated, stats);
+		int hmin=a[0], hmax=a[1];
+		if (hmax>hmin) {
+			double min = stats.histMin+hmin*stats.binSize;
+			double max = stats.histMin+hmax*stats.binSize;
+			ip.resetRoi();
+			ip.setMinAndMax(min, max);
+		}
+	}
+
+	int[] getMinAndMax(ImageProcessor ip, double saturated, ImageStatistics stats) {
+		int hmin, hmax;
+		int threshold;
+		int[] histogram = stats.histogram;		
+		if (saturated>0.0)
+			threshold = (int)(stats.pixelCount*saturated/200.0);
+		else
+			threshold = 0;
+		int i = -1;
+		boolean found = false;
+		int count = 0;
+		do {
+			i++;
+			count += histogram[i];
+			found = count>threshold;
+		} while (!found && i<255);
+		hmin = i;
+				
+		i = 256;
+		count = 0;
+		do {
+			i--;
+			count += histogram[i];
+			found = count>threshold;
+			//IJ.log(i+" "+count+" "+found);
+		} while (!found && i>0);
+		hmax = i;
+		int[] a = new int[2];
+		a[0]=hmin; a[1]=hmax;
+		return a;
 	}	
 
 }
