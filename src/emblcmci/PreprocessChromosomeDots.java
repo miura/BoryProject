@@ -9,6 +9,7 @@ package emblcmci;
  * @author CMCI EMBL, 2010
  */
 
+import emblcmci.FFTFilter_NoGenDia;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
@@ -45,10 +46,12 @@ public class PreprocessChromosomeDots {
 		sc.convertToGray8();
 		//IJ.run(imp, "8-bit", "");
 
-		//TODO
-		//FFTFilter_NoDialog.setparam(filterlarge, filtersmall, 0, tolerance, true, false, false, true);
 		//fftbandPssSpec(imp);
-		FFTFilter_NoDialog FFTbp = new FFTFilter_NoDialog(imp);
+		//setparam(double filterLargeDia, double filterSmallDia, int choiceIndex, double toleranceDia, 
+		//		boolean doScalingDia, boolean saturateDia, boolean displayFilter, boolean processStack)
+		FFTFilter_NoGenDia fft = new FFTFilter_NoGenDia();
+		fft.setparam(filterlarge, filtersmall, 0, 5, true, true, false, true);
+		fft.core(imp);
 		
 		BleachCorrection_MH BMH = new BleachCorrection_MH(imp);
 		BMH.doCorrection();
@@ -61,6 +64,7 @@ public class PreprocessChromosomeDots {
 		suppress = sups;
 	}	
 	
+	//@deprecated. 
 	public void fftbandPssSpec(ImagePlus imp) {
 		fftargument = "filter_large="+Integer.toString(filterlarge)
 						+" filter_small="+Integer.toString(filtersmall)
