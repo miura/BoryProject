@@ -12,6 +12,23 @@ import ij.measure.ResultsTable;
  * @author Miura
  *
  */
+/* Design of the cost function
+ * 
+ * reference dots: assume that it's OK, with position and number
+ * then (1) first match dots using modified wedding match algorithm
+ * (2) average distance. 
+ * (3) if test dots (dots derived from particletracker3D) number is
+ * less than reference dots, this would add up distance to some extent. 
+ * 
+ * cost (for every parameter set) = average distance (using matched) * 2 * missing dots )
+ * 
+ * latter multiplication is simply to enhance the negative effect due to dots not recovered.
+ * 
+ * if no particle is found in particle tracker 3D in any time point, return null for the cost. 
+ * 
+ * Further implementation: use down-hill optimizer for searching parameter space
+ *  (guess value then is important)
+ */
 public class ParticleTrackerOptimizer {
 	
 	Vector<Object4D> obj4Dv = null;
@@ -43,6 +60,19 @@ public class ParticleTrackerOptimizer {
 		
 		return true;
 	}
+	
+	boolean setRefObject4D(){
+		
+		if (!setResults2Obj4dV()) return false;
+		
+		return true;
+	}
+
+	/** main method for searching parameter space
+	 * 
+	 * @param imp
+	 * @return
+	 */
 	boolean iterateSpace(ImagePlus imp){
 		int iterx = (int) Math.round((this.radiusMax - this.radiusMin)/this.radiusSteps);
 		int itery = (int) Math.round((this.percentileMax - this.percentileMin)/this.percentileSteps);
@@ -50,6 +80,7 @@ public class ParticleTrackerOptimizer {
 		for (int j = 0; j < itery; j++){
 			for (int i = 0; i < iterx; i++){
 				doParticleTrack(imp, radiusMin + i * radiusSteps, 0, percentileMin + j * percentileSteps);
+				// here, there should be method to calculate with some cost function
 			}
 		}
 		return true;
@@ -111,6 +142,11 @@ public class ParticleTrackerOptimizer {
 		}
 		this.refobj4D = refobj4d;
 		return true;
+	}
+	
+	public class CostPara{
+		float	sum_distance = 0;
+		int 	dotnum_dif = 0; //ref dot num - detected dot num
 	}
 
 }
