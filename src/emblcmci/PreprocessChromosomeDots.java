@@ -37,25 +37,41 @@ public class PreprocessChromosomeDots {
 		else 		
 			imp = new Duplicator().run(WindowManager.getCurrentImage());
 		if (null == imp) return;
+		long startTime = System.currentTimeMillis();
 		ImageConverter.setDoScaling(true);
-		//IJ.run(imp, "Enhance Contrast", "saturated=0.001 use");
-		stretchStackHistogram(imp,0.001);
-		imp.updateAndDraw();
+		
+		//works OK with the flag -Djava.awt.headless=true
+		IJ.run(imp, "Enhance Contrast", "saturated=0.001 use");
+		
+		//follwoing two lines were used when I did not use the flag -Djava.awt.headless=true
+		//stretchStackHistogram(imp,0.001);
+		//imp.updateAndDraw();
 		
 		StackConverter sc = new StackConverter(imp);
 		sc.convertToGray8();
 		//IJ.run(imp, "8-bit", "");
 
+		// below is the method to access FFT by run() method, and did not work before 
+		//but it might be OK with the flag -Djava.awt.headless=true  
 		//fftbandPssSpec(imp);
+
 		//setparam(double filterLargeDia, double filterSmallDia, int choiceIndex, double toleranceDia, 
 		//		boolean doScalingDia, boolean saturateDia, boolean displayFilter, boolean processStack)
 		FFTFilter_NoGenDia fft = new FFTFilter_NoGenDia();
-		fft.setparam(filterlarge, filtersmall, 0, 5, true, true, false, true);
+		fft.setparam(filterlarge, filtersmall, 0, 5, false, false, false, true);
 		fft.core(imp);
 		
 		BleachCorrection_MH BMH = new BleachCorrection_MH(imp);
 		BMH.doCorrection();
 		imp.show();
+		long endTime = System.currentTimeMillis();
+		System.out.println("calculation time  = " + (endTime - startTime) + "ms."); 
+	}
+	public ImagePlus getImp() {
+		return imp;
+	}
+	public void setImp(ImagePlus imp) {
+		this.imp = imp;
 	}
 	public void setFFTparameters(int fl, int fs, int tol, String sups){
 		filterlarge = fl;
@@ -84,17 +100,29 @@ public class PreprocessChromosomeDots {
 		ImageStatistics stats = null;
 		stats = new StackStatistics(imp);
 		ImageStack stack = imp.getStack();
+		int[] a = getMinAndMax(saturated, stats);
+		int hmin=a[0], hmax=a[1];
+		double min = stats.histMin+hmin*stats.binSize;
+		double max = stats.histMin+hmax*stats.binSize;
+		System.out.println("hmin = "+ Integer.toString(hmin));
+		System.out.println("hman = "+ Integer.toString(hmax));
+		System.out.println("pix value min = "+ Double.toString(min));
+		System.out.println("pix value hmin = "+ Double.toString(max));
 		for (int i=1; i<=stackSize; i++) {
 			IJ.showProgress(i, stackSize);
 			ImageProcessor ip = stack.getProcessor(i);
-			stretchHistogram(ip, saturated, stats);
+			stretchHistogram(ip, saturated, stats, hmin, hmax, min, max);
 		}
+		imp.updateAndDraw();
 	}
 
 	//modified (simplified) version of ContrastEnhancer
 	public void stretchHistogram(ImageProcessor ip, double saturated, ImageStatistics stats) {		
-		int[] a = getMinAndMax(ip, saturated, stats);
+		//int[] a = getMinAndMax(ip, saturated, stats);
+		int[] a = getMinAndMax(saturated, stats);
 		int hmin=a[0], hmax=a[1];
+		System.out.println("hmin = "+ Integer.toString(hmin));
+		System.out.println("hmin = "+ Integer.toString(hmax));
 		if (hmax>hmin) {
 			double min = stats.histMin+hmin*stats.binSize;
 			double max = stats.histMin+hmax*stats.binSize;
@@ -102,8 +130,17 @@ public class PreprocessChromosomeDots {
 			ip.setMinAndMax(min, max);
 		}
 	}
+	public void stretchHistogram(ImageProcessor ip, double saturated, ImageStatistics stats, int hmin, int hmax, double min, double max) {		
+		if (hmax>hmin) {
+			//ip.resetRoi();
+			ip.setMinAndMax(min, max);
+		}
+	}	
 
-	int[] getMinAndMax(ImageProcessor ip, double saturated, ImageStatistics stats) {
+	//deleted ImageProcessor from argument since not used. 
+//	int[] getMinAndMax(ImageProcessor ip, double saturated, ImageStatistics stats) {
+	int[] getMinAndMax(double saturated, ImageStatistics stats) {
+
 		int hmin, hmax;
 		int threshold;
 		int[] histogram = stats.histogram;		
