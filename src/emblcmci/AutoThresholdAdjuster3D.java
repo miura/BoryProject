@@ -185,6 +185,17 @@ public class AutoThresholdAdjuster3D {
 		}
 	}
 	
+	/**Three different methods for segmentation of dots, then measure dot-dot distance time course. 
+	 * <br>currently, 
+	 * <ul>
+	 * 	1. automatic threshold adjustment coupled with 3Dobject counter is used. 
+	 *  <br>2. using trained data and trainable segmentation
+	 *  <br>3. using segmentation module of particle tracker 3D (not implemented yet). 
+	 * </ul> 
+	 * @param imp0 channel 1 4D stack
+	 * @param imp1 channel 2 4D stack
+	 * @return
+	 */
 	public boolean segAndMeasure(ImagePlus imp0, ImagePlus imp1){
 		ImagePlus binimp0, binimp1;
 		obj4Dch0 = new Vector<Object4D>();
@@ -275,9 +286,14 @@ public class AutoThresholdAdjuster3D {
 		
 		return true; 
 	}
-	/** Stores particle parameters (centroid coordinates, moments) in String form derived from 
-	 * particle3D plugin is stored in Object4D array
-	 * @param particles String variable exported from particle3D plugin
+	/** Stores particle parameters 
+	 * <ul>
+	 * <li>centroid<li>coordinates<li>moments<li>scores
+	 * </ul>
+	 * output from particle3D plugin (type of String) are stored in Object4D array.
+	 * <br>Object4D is an extended class of Object3D with time point fields and methods.  
+	 * 
+	 * @param particles: String variable exported from particle3D plugin
 	 * @param obj4dv Vector<Object4D> to store all detected particles
 	 * @param chnum String indicating the name of channel
 	 */
@@ -369,7 +385,11 @@ public class AutoThresholdAdjuster3D {
 			 }
 		 }
 	}
-	// not used anymore
+	/** not used anymore
+	 * 
+	 * @param linked
+	 * @param imp
+	 */
 	public void drawlinks(Object4D[][] linked, ImagePlus imp){
 		IJ.run("Colors...", "foreground=white background=white selection=yellow");
 		for(int i = 0;  i < linked.length; i++) {
@@ -383,7 +403,13 @@ public class AutoThresholdAdjuster3D {
 		imp.updateAndDraw();
 	}
 
-	//plotting linked lines, but with original grayscale image (will be converted to RGB).
+	/**plotting linked lines, but with original gray scale image (will be converted to RGB).
+	 * 
+	 * @param linked
+	 * @param imp0
+	 * @param imp1
+	 * @author Kota Miura
+	 */
 	public void drawlinksGrayscale(Object4D[][] linked, ImagePlus imp0, ImagePlus imp1){
 		ImagePlus ch0proj = null;
 		ImagePlus ch1proj = null;
@@ -453,7 +479,13 @@ public class AutoThresholdAdjuster3D {
 		
 	}
 
-
+	/** Z projection of 4D stack, each time point projected to 2D.<br> 
+	 *this might not be usefule these days as native z-projection supports 4D. 
+	 * @param imp: 4D stack ImagePlus
+	 * @param zframes: number of z slices
+	 * @param tframes: number of time points.
+	 * @return
+	 */
 	public ImagePlus createZprojTimeSeries(ImagePlus imp, int zframes, int tframes){
 		ImageStack zprostack = new ImageStack();
 		zprostack = imp.createEmptyStack();
@@ -471,9 +503,13 @@ public class AutoThresholdAdjuster3D {
 		return projimp;				
 	}
 	
-	// processes each time point separated. 
-	// this part could have two options, whether to use trainable segmentation or simple threshold. 
-	// "particletracker3D" could also be implemented (segmentation part).
+	/** Segmentation of Dots using automatic threshold level coupled with 3D Object Counter
+	 * processes 3D stack from each time point separately.<br>
+	 *   
+	 * @param imp: gray scale 4D stack
+	 * @return ImagePlus: duplicated and then processed ImagePlus (binary image)
+	 * 
+	 */
 	public ImagePlus segmentaitonByObjectSize(ImagePlus imp){
 
 		Duplicator bin = new Duplicator();	//this duplication may not be necessary
@@ -488,7 +524,7 @@ public class AutoThresholdAdjuster3D {
 		int maxth = (int) Math.pow(2,imp.getBitDepth());
 		for(int i =0; i<tframes; i++){
 			impcopy = dup.run(imp, (i*zframes+1), (i+1)*zframes);
-			minth = initializeThresholdLevel(impcopy);
+			minth = initializeThresholdLevel(impcopy, 25); //second argument is cutoff pixel area in histogram upper part
 			IJ.log(Integer.toString(i)+": initial threshold set to "+Double.toString(minth));
 			adjth = (int) ThresholdAdjusterBy3Dobj(imp, (int)minth, this.thadj_volmin, this.thadj_volmax, this.thadj_nummin, this.thadj_nummax);
 			IJ.log("... ... Adjusted to "+Integer.toString(adjth));
@@ -499,26 +535,50 @@ public class AutoThresholdAdjuster3D {
 		return binimp;
 	}
 	
-	// this basically initializes the threshold value using Shanbhag autothreshold
-	public int initializeThresholdLevel(ImagePlus imp){
+	/**Initializes the threshold value of 3D stack with dark background 
+	 * <ul>
+	 * <li>1. z-projection by maximum intensity
+	 * <li>2. get histogram of z-projection
+	 * <li>3. then find a pixel value that the upper area of histogram becomes larger than setting value
+	 * </ul>
+	 * <br>tried using Shanbhag autothreshold but later suppressed. 
+	 * <br> 
+	 * @param imp	grayscale 3D stack
+	 * @param cutoff_upperArea pixel area of upper part of histogram 
+	 * @return
+	 */
+	public int initializeThresholdLevel(ImagePlus imp, int cutoff_upperArea){
 		ZProjector zpimp = new ZProjector(imp);
 		zpimp.setMethod(1); //1 is max intensity projection
-			//setStartSlice(int slice);
-			//setStopSlice(int slice);
 		zpimp.doProjection();
 			//zpimp.getProjection().show();
 			//IJ.setAutoThreshold(zpimp.getProjection(), "Shanbhag dark");
-		//IJ.setAutoThreshold(zpimp.getProjection(), "Minimum dark");
-		//double minth = zpimp.getProjection().getProcessor().getMinThreshold();
+			//IJ.setAutoThreshold(zpimp.getProjection(), "Minimum dark");
+			//double minth = zpimp.getProjection().getProcessor().getMinThreshold();
 		int[] hist = zpimp.getProjection().getProcessor().getHistogram();	//simpler strategy
 		int sumpixels =0;
 		int i = hist.length-1;
-		while (sumpixels < 25){
+		while (sumpixels < cutoff_upperArea){
 			sumpixels += hist[i--];
 		}
 		return i;
 	}
-	
+	/** Explore different threshold levels to find out an optimum threshold level for segmenting 
+	 * 3D dots.<br><br>
+	 * <b>updates</b>
+	 * <ul>
+	 * <li>20101117 added a line to suppress error messages from Counter3D
+	 * when no 3D objects were found. 
+	 * </ul>
+	 * 
+	 * @param imp	gray scale 3D stack
+	 * @param initTh	initial level of threshold to start with exploration
+	 * @param thadj_volmin
+	 * @param thadj_volmax
+	 * @param thadj_nummin
+	 * @param thadj_nummax
+	 * @return optimized threshold level for segmentation of 3D dots. 
+	 */
 	public double ThresholdAdjusterBy3Dobj(ImagePlus imp, 
 			int initTh, 
 			int thadj_volmin, 
@@ -570,7 +630,7 @@ public class AutoThresholdAdjuster3D {
 				if (nobj < thadj_nummin) localthres++;
 				else localthres--;
 			}			
-			
+			IJ.redirectErrorMessages(true);	//20101117
 			OC = new Counter3D(impcopy, localthres, minspotvoxels, (int) (maxspotvoxels*1.5), excludeOnEdges, redirect);
 			obj = OC.getObjectsList();
 			nobj = obj.size();
@@ -631,25 +691,26 @@ public class AutoThresholdAdjuster3D {
 		
 		return obj4dv.size();
 	}
-	
+
 	String LogObject3D(Object3D cObj, int i){
-		 String opt ="";
-		 String Cent ="";
-		 Cent = "("
-			 +Float.toString(cObj.centroid[0])+","
-		 	 +Float.toString(cObj.centroid[1])+","
-		 	 +Float.toString(cObj.centroid[2])
-		 	 +")";
-		 opt = "Object"+Integer.toString(i)
-		 	+" vol="+Integer.toString(cObj.size) 
-		 	+ "\t "+Cent
-		 	+" : IntDen"+Float.toString(cObj.int_dens);
-		 return opt;
+		String opt ="";
+		String Cent ="";
+		Cent = "("
+			+Float.toString(cObj.centroid[0])+","
+			+Float.toString(cObj.centroid[1])+","
+			+Float.toString(cObj.centroid[2])
+			+")";
+		opt = "Object"+Integer.toString(i)
+		+" vol="+Integer.toString(cObj.size) 
+		+ "\t "+Cent
+		+" : IntDen"+Float.toString(cObj.int_dens);
+		return opt;
 	}
-		/**Show content of Object4D vector in Results window. 
-		 * 
-		 * @param obj4Dv Vector<Object4D>
-		 */
+	/**
+	 * Show Object4D vector in Results window. 
+	 * 
+	 * @param obj4Dv Vector<Object4D>
+	 */
 	   public void showStatistics(Vector<Object4D> obj4Dv){
 	        ResultsTable rt;        
 	        rt=new ResultsTable();	        
@@ -769,10 +830,11 @@ public class AutoThresholdAdjuster3D {
 		   else flag = 2;		   
 		   return flag;
 	   }
-	   /* Link objects in two channels
-	    * 
-	    * assumes that there is only one or two pairs.
+	   /** Link objects in two channels<br>
+	    * <br>
+	    * assumes that <b>there is only one or two pairs</b>.<br>
 	    * Picks up largest and/or nearest particle first.  
+	    * <br>
 	    * TODO in one case, dots in different daughter cells were linked. This should be avoided. 
 	    */
 	   Object4D[][] dotLinker(Vector<Object4D> obj4Dch0,  Vector<Object4D> obj4Dch1, int tframes){
@@ -830,7 +892,9 @@ public class AutoThresholdAdjuster3D {
 
 }
 
-//for sorting Object3D Vector, descending order by size (volume)
+/** 
+* for sorting Object3D Vector, descending order by size (volume)
+*/
 class ComparerBysize3D implements Comparator<Object3D> {
 	public static final int ASC = 1;
 	public static final int DESC = -1;
@@ -856,7 +920,11 @@ class ComparerBysize3D implements Comparator<Object3D> {
     }
 }
 
-//for sorting Object4D, descending order by score (of none-particle criteria)
+/**for sorting Object4D, descending order by score (of none-particle criteria)
+ * 
+ * @author Miura
+ *
+ */
 class ComparerByscore4D implements Comparator<Object4D> {
 	public static final int ASC = 1;
 	public static final int DESC = -1;
