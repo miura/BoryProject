@@ -14,6 +14,7 @@ import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
 import ij.WindowManager;
+import ij.gui.GenericDialog;
 import ij.plugin.Duplicator;
 import ij.plugin.PlugIn;
 import ij.process.ImageConverter;
@@ -23,14 +24,47 @@ import ij.process.StackConverter;
 import ij.process.StackStatistics;
 
 public class PreprocessChromosomeDots {
-	//FFT parameters
-	private int filterlarge =10;
-	private int filtersmall =2;
-	private int tolerance =5;
-	private String suppress ="None";
+	//FFT parameters 
+	private static double filterlarge = 10.0;
+	private static double filtersmall = 2.0;
+	private static double tolerance = 5.0;
+	private static String suppress ="None";
 	private String fftargument;
 	
 	ImagePlus imp;
+
+	public boolean fftparaSetter(){
+		GenericDialog gd = new GenericDialog("FFT Bandpass Filter");
+		gd.addNumericField("Filter_large structures down to", filterlarge, 0, 4, "pixels");
+		gd.addNumericField("Filter_small structures up to", filtersmall, 0, 4, "pixels");
+		gd.addNumericField("Tolerance of direction:", tolerance, 0, 4, "%");
+//		gd.addCheckbox("Autoscale after filtering", doScalingDia);
+//		gd.addCheckbox("Saturate image when autoscaling", saturateDia);
+//		gd.addCheckbox("Display filter", displayFilter);
+//		if (stackSize>1)
+//			gd.addCheckbox("Process entire stack", processStack);	
+		gd.addHelp(IJ.URL+"/docs/menus/process.html#fft-bandpass");
+		gd.showDialog();
+		if(gd.wasCanceled())
+			return false;
+		if(gd.invalidNumber()) {
+			IJ.error("Error", "Invalid input number");
+			return false;
+		}				
+		filterlarge = gd.getNextNumber();
+		filtersmall = gd.getNextNumber();	
+		tolerance = gd.getNextNumber();
+//		choiceDia = choices[choiceIndex];
+//		toleranceDia = gd.getNextNumber();
+//		doScalingDia = gd.getNextBoolean();
+//		saturateDia = gd.getNextBoolean();
+//		displayFilter = gd.getNextBoolean();
+//		if (stackSize>1)
+//			processStack = gd.getNextBoolean();
+		return true;
+		
+	}
+	
 	public void run() {
 		if (null == WindowManager.getCurrentImage()) 
 			imp = IJ.openImage(); 
@@ -58,7 +92,7 @@ public class PreprocessChromosomeDots {
 		//setparam(double filterLargeDia, double filterSmallDia, int choiceIndex, double toleranceDia, 
 		//		boolean doScalingDia, boolean saturateDia, boolean displayFilter, boolean processStack)
 		FFTFilter_NoGenDia fft = new FFTFilter_NoGenDia();
-		fft.setparam(filterlarge, filtersmall, 0, 5, false, false, false, true);
+		fft.setparam(filterlarge, filtersmall, 0, tolerance, false, false, false, true);
 		fft.core(imp);
 		
 		BleachCorrection_MH BMH = new BleachCorrection_MH(imp);
@@ -82,10 +116,10 @@ public class PreprocessChromosomeDots {
 	
 	//@deprecated. 
 	public void fftbandPssSpec(ImagePlus imp) {
-		fftargument = "filter_large="+Integer.toString(filterlarge)
-						+" filter_small="+Integer.toString(filtersmall)
+		fftargument = "filter_large="+Double.toString(filterlarge)
+						+" filter_small="+Double.toString(filtersmall)
 						+" suppress="+suppress
-						+" tolerance="+Integer.toString(tolerance)
+						+" tolerance="+Double.toString(tolerance)
 						+" process";
 		IJ.log(fftargument);
 		IJ.run(imp, "Bandpass Filter...", fftargument); 		
@@ -170,6 +204,8 @@ public class PreprocessChromosomeDots {
 		int[] a = new int[2];
 		a[0]=hmin; a[1]=hmax;
 		return a;
-	}	
+	}
+	
+
 
 }
