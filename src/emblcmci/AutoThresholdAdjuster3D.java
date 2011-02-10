@@ -1,9 +1,9 @@
 package emblcmci;
 
-/* segmentation of yeast chromosome 
- * use 3D object counter to adjust threshold level of 3D stack. 
- * 3D object counter must be installed in ImageJ
- * 100614 main functions now in separate classes
+/** Segmentation of yeast chromosome Foci 
+ *	use 3D object counter to adjust threshold level of 3D stack. 
+ *	3D object counter must be installed in ImageJ
+ *	100614 main functions now in separate classes
  * @author Kota Miura  
  * @ cmci, embl miura@embl.de
  */
