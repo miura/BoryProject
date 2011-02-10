@@ -1,3 +1,8 @@
+/**For prerpocessing yeast gene FOCI dots (4D)
+ * Kota Miura (miura@embl.de) for Bory's project
+ * 
+ */
+
 import emblcmci.PreprocessChromosomeDots;
 import ij.IJ;
 import ij.plugin.PlugIn;
@@ -7,14 +12,12 @@ public class Preprocess_ChromosomeDots implements PlugIn {
 
 	@Override
 	public void run(String arg) {
-		// TODO Auto-generated method stub
 		PreprocessChromosomeDots ppc = new PreprocessChromosomeDots();
-//		if (arg.equals("FFTparaSetter")){
-//			ppc.FFTparaSetter();
-//		} else { 
-			//ppc = new PreprocessChromosomeDots();
+		if (arg.equals("FFTparaSetter")) {
+			ppc.fftparaSetter();
+		} else { 
 			ppc.run();
-//		}
+		}
 	}
 
 }
