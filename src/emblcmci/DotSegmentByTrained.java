@@ -9,6 +9,18 @@ package emblcmci;
  *
  * @author Kota Miura
  * @author CMCI EMBL
+ * 
+ * batchprocessing example
+ * ---
+ * 	imp = IJ.getImage();
+ * 	traindata = "D:\\People\\Tina\\20110813\\data02.arff";
+ * 
+ * 	importClass(Packages.emblcmci.DotSegmentByTrained);
+ * 	dbt = new DotSegmentByTrained(traindata, imp);
+ * 	binimp = dbt.runsilent();
+ * 	binimp.show();
+ * ---
+ * 
  */
 
 import trainableSegmentation.Trainable_Segmentation;
@@ -31,6 +43,25 @@ public class DotSegmentByTrained {
 		setDatapath(); 
 		processTopImage();
 	}
+	
+	/**
+	 * assumes that the class instance is constructed using 
+	 * both imp (stack) and full path to data. 
+	 * 
+	 * @return
+	 */
+	public ImagePlus runsilent() {
+		ImagePlus binimp;
+		if (this.imp == null){
+			IJ.log("Stack is not set to this instance");
+			return null;
+		} else {
+			binimp =  core(this.imp);
+			this.resultimp = binimp;
+		}		
+		return binimp;
+	}
+	
 	//** constructor 
 	//
 	public DotSegmentByTrained() {
@@ -38,7 +69,7 @@ public class DotSegmentByTrained {
 	//** constructor 
 	//	
 	public DotSegmentByTrained(String fullpath) {
-		this.fullpathdata = fullpath;
+		DotSegmentByTrained.fullpathdata = fullpath;
 	}
 	//** constructor 
 	//	
@@ -51,7 +82,7 @@ public class DotSegmentByTrained {
 	/**
 	 * @param fullpathdata the fullpathdata to set
 	 */
-	public static void setFullpathdata(String fullpathdata) {
+	public void setFullpathdata(String fullpathdata) {
 		DotSegmentByTrained.fullpathdata = fullpathdata;
 	}
 	/**
@@ -63,6 +94,10 @@ public class DotSegmentByTrained {
 		return fullpathdata;
 	}
 
+	/**
+	 * method for interactively setting data path using dialog
+	 * @return
+	 */
 	public String setDatapath(){
 		OpenDialog od = new OpenDialog("Choose data file","");
 		if (od.getFileName()==null)
@@ -84,7 +119,7 @@ public class DotSegmentByTrained {
 		IJ.log("Loading data from " + fullpathdata + "...");
 	}
 	
-	public static void processTopImage(){
+	public void processTopImage(){
 		ImagePlus currentimp;
 		//get current image
 		if (null == WindowManager.getCurrentImage()) 
@@ -97,11 +132,6 @@ public class DotSegmentByTrained {
 		resultImage.show();			
 	}
 	
-	public static ImagePlus processImage(ImagePlus imp){
-		//currentimp.show();
-		ImagePlus resultImage = core(imp);
-		return resultImage;			
-	}	
 	
 	public static void duplicatetest(){
 		duplicateStack(WindowManager.getCurrentImage());
@@ -120,17 +150,17 @@ public class DotSegmentByTrained {
 		//dupimp.show();
 		return dupimp;
 	}
-	// this as well could be called from macro easily. 
+	// For calling from from macro easily. 
 	public static void processImageAt(String fullpathstack){
 		//String fullpathstack = "C:\\HDD\\People\\Bory\\testChromosome\\3con170210_6_R3D.dv - C=0.tif";
 		//String fullpathstack = "C:\\HDD\\People\\Bory\\100423\\tt.tif";
 		ImagePlus imp = IJ.openImage(fullpathstack);//during development, in
-		ImagePlus resultImage = core(imp);
+		ImagePlus resultImage = DotSegmentByTrained.corestatic(imp);
 		IJ.log(resultImage.getTitle());
 		resultImage.show();	
 	}
 	
-	public static ImagePlus core(ImagePlus imp){
+	public ImagePlus core(ImagePlus imp){
 
 		ImageStack stack = imp.getStack();
 
@@ -156,6 +186,33 @@ public class DotSegmentByTrained {
 		return binimp;
 		
 	}
+	public static ImagePlus corestatic(ImagePlus imp){
+
+		ImageStack stack = imp.getStack();
+
+		ImagePlus imptemp = new ImagePlus("training slice", new ByteProcessor(imp.getWidth(), imp.getHeight()));
+		ImageProcessor ipc = imptemp.getProcessor();// = imp.getProcessor().duplicate();		
+		String fullpath;
+		fullpath = fullpathdata;
+
+		ipc = stack.getProcessor(1).duplicate();
+		//using Ignacio's update
+		Trainable_Segmentation seg = new Trainable_Segmentation(new ImagePlus("temp", ipc));
+		//"Load Data" button
+		seg.loadTrainingData(fullpath);
+		//"Train classifier" button
+		try{
+			seg.trainClassifier();
+		}catch(Exception e){
+			e.printStackTrace();
+		}
+		//"Apply Classifier" button
+		ImagePlus binimp = seg.applyClassifierToTestImage(imp, 2);
+				
+		return binimp;
+		
+	}	
+	
 	public static String testmacrocall(String logtext){
 		return logtext;
 	}

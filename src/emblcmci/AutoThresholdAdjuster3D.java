@@ -208,9 +208,9 @@ public class AutoThresholdAdjuster3D {
 		//Trainable Segmentation
 			if (segMethod == 1){
 				DotSegmentByTrained train = new DotSegmentByTrained();
-				train.Setfullpathdata(fullpathtoTrainedData0);
+				train.setFullpathdata(fullpathtoTrainedData0);
 				binimp0 = train.core(imp0);
-				train.Setfullpathdata(fullpathtoTrainedData1);
+				train.setFullpathdata(fullpathtoTrainedData1);
 				binimp1 = train.core(imp1);
 			} else {
 		//3D particle detection
