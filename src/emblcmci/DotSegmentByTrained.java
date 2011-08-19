@@ -21,7 +21,10 @@ import ij.plugin.PlugIn;
 
 public class DotSegmentByTrained {
 
-	private static String fullpathdata = "ttt";
+	private static String fullpathdata = "/";
+	private ImagePlus imp;
+	private ImagePlus resultimp; //segmented image
+
 
 	public void run() {
 		//IJ.log("test fiji");
@@ -30,20 +33,44 @@ public class DotSegmentByTrained {
 	}
 	//** constructor 
 	//
-	public DotSegmentByTrained(){}
-	
-	public void Setfullpathdata(String fullpathdata){
-		this.fullpathdata = fullpathdata;
+	public DotSegmentByTrained() {
 	}
-	
-	//interactively sets the trained data. dialog pops up.
+	//** constructor 
+	//	
+	public DotSegmentByTrained(String fullpath) {
+		this.fullpathdata = fullpath;
+	}
+	//** constructor 
+	//	
+	public DotSegmentByTrained(String fullpath, ImagePlus imp) {
+		DotSegmentByTrained.fullpathdata = fullpath;
+		this.imp = imp;
+	}	
+
+
+	/**
+	 * @param fullpathdata the fullpathdata to set
+	 */
+	public static void setFullpathdata(String fullpathdata) {
+		DotSegmentByTrained.fullpathdata = fullpathdata;
+	}
+	/**
+	 * set the full path to arff data
+	 * @return fullpath to arff data
+	 * interactively sets the trained data. dialog pops up.
+	 */
+	public static String getFullpathdata() {
+		return fullpathdata;
+	}
+
 	public String setDatapath(){
 		OpenDialog od = new OpenDialog("Choose data file","");
 		if (od.getFileName()==null)
 			return null;
-		fullpathdata = od.getDirectory() + od.getFileName();
+		String fullpath = od.getDirectory() + od.getFileName();
+		setFullpathdata(fullpath);
 		IJ.log("Data will be laoded from " + fullpathdata + "...");
-		return fullpathdata;
+		return fullpath;
 	}
 	
 	
@@ -69,6 +96,12 @@ public class DotSegmentByTrained {
 		ImagePlus resultImage = core(currentimp);
 		resultImage.show();			
 	}
+	
+	public static ImagePlus processImage(ImagePlus imp){
+		//currentimp.show();
+		ImagePlus resultImage = core(imp);
+		return resultImage;			
+	}	
 	
 	public static void duplicatetest(){
 		duplicateStack(WindowManager.getCurrentImage());
@@ -118,7 +151,7 @@ public class DotSegmentByTrained {
 			e.printStackTrace();
 		}
 		//"Apply Classifier" button
-		ImagePlus binimp = seg.applyClassifierToTestImage(imp);
+		ImagePlus binimp = seg.applyClassifierToTestImage(imp, 2);
 				
 		return binimp;
 		
