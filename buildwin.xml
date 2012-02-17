@@ -5,11 +5,14 @@
 	<property name="build" location="bin" />
 	<property name="dist" location="dist" />
 
-	<property name="pluginsDir" location="$basedir/../../imagej/plugins/" />
-
+<!--	<property name="pluginsDir" location="$basedir/../../imagej/plugins/" /> 
+-->
+	
+	<property name="pluginsDir" location="C:\\dev2\\IJ\\imagej\\plugins\\" />
+	<property name="FIJIpluginsDir" location="D:\\Fiji.app\\plugins\\" />
 	<property name="jarfile" value="AutoThresholdAdjuster3D_.jar" />
-	<property name="user.name" value="Kota Miura" />
-
+	<property name="user.name" value="Kota Miura" ></property>
+	
 	<target name="main" depends="compress" description="Main target">
 		<echo>
 		Building the .jar file.
@@ -25,5 +28,12 @@
 			</manifest>
 		</jar>
 		<copy file="${jarfile}" toDir="${pluginsDir}" />
+ 		<echo>
+ 			Copied to ${pluginsDir}
+ 		</echo>	
+		<copy file="${jarfile}" toDir="${FIJIpluginsDir}" />
+ 		<echo>
+ 			Copied to ${FIJIpluginsDir}
+ 		</echo>			
 	</target>
 </project>
