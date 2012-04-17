@@ -80,15 +80,19 @@ public class AutoThresholdAdjuster3D {
 	 */
 	double zfactor;
 	
+	/** The main method for the segmentation and measurements. 
+	 * 
+	 */
 	public void run() {
 
-		//copied and modified from image - color merge... (RGBStackMerge.java)
+		// ** get a list of opened windows. 
+		//    copied and modified from image - color merge... (RGBStackMerge.java)
 		int[] wList = WindowManager.getIDList();
 		if (wList==null) {
 			IJ.error("bory dot analysis", "No images are open.");
 			return;
 		}
-
+		
 		String[] titles = new String[wList.length+1];
 		for (int i=0; i<wList.length; i++) {
 			ImagePlus imp = WindowManager.getImage(wList[i]);
@@ -97,6 +101,7 @@ public class AutoThresholdAdjuster3D {
 		String none = "*None*";
 		titles[wList.length] = none;
 
+		// ** dialog for selecting image stack for each channel  
 		GenericDialog gd = new GenericDialog("Bory Dot Analysis");
 		gd.addChoice("Ch0:", titles, titles[0]);
 		gd.addChoice("Ch1:", titles, titles[1]);
@@ -113,6 +118,8 @@ public class AutoThresholdAdjuster3D {
 		ImagePlus imp0 = WindowManager.getImage(wList[index[0]]);
 		ImagePlus imp1 = WindowManager.getImage(wList[index[1]]);		
 		//cal.set
+		
+		// ** check if selected windows are stack
 		if (imp0 == null) return;
 		if (imp0.getStackSize() == 1) {
 			IJ.error("Channel 0 is not a stack");
@@ -127,17 +134,23 @@ public class AutoThresholdAdjuster3D {
 			IJ.error("Voxel Depth(z)is not defined correctly: check [Image -> properties]");
 			return;
 		}
-		
+
 		calkeep = cal.copy();
 		zfactor = cal.pixelDepth / cal.pixelWidth;
 		
-		IJ.log("min vox segment: " + Integer.toString(minspotvoxels) + 
-				"\n min vox measure : " + Integer.toString(minspotvoxels_measure));
+		IJ.log(	"min vox segment: " + 
+				Integer.toString(minspotvoxels) + 
+				"\n min vox measure : " + 
+				Integer.toString(minspotvoxels_measure)
+				);
 	
 		Roi r0 = imp0.getRoi();
 		Roi r1 = imp1.getRoi();
 		Roi r = null;
 
+		// ** works both with and without ROI. 
+		//    in case of ROI selected, that portion is cropped. 
+		//    ... then start of segmentation and measurements
 		if ((r0 == null) && (r1 == null))				
 			segAndMeasure( imp0, imp1);
 		else {
@@ -850,12 +863,13 @@ public class AutoThresholdAdjuster3D {
 			   obj4Dch1id2 = returnObj4D(obj4Dch1, i, 2);
 			   if ((obj4Dch0id1 != null) && (obj4Dch1id1 != null)) {
 				   
-				   // 1x1 case
+				   // 1x1 case. There is only one unique case. 
 				   if ((obj4Dch0id2 == null) && (obj4Dch1id2 == null)) { 
 					   linked[i][0] = obj4Dch0id1;
 					   linked[i][1] = obj4Dch1id1;				   
 				   } else {
-					   if ((obj4Dch0id2 != null) && (obj4Dch1id2 != null)) { // 2x2 both channels contain multiple dots
+					   // 2x2 both channels contain multiple dots
+					   if ((obj4Dch0id2 != null) && (obj4Dch1id2 != null)) { 
 						   flag = compare2x2(i);
 						   if (flag == 1) {
 							   linked[i][0] = obj4Dch0id1;
