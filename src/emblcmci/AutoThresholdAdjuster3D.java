@@ -214,37 +214,38 @@ public class AutoThresholdAdjuster3D {
 				binimp1 = train.core(imp1);
 			} else {
 		//3D particle detection
-				if (segMethod == 2){			
-					IJ.log("Segmentation using Particle Tracker 3D is not completed Yet");
-					//particle tracker3D
-					DotSegmentByParticletracker3D dpt3D = new DotSegmentByParticletracker3D();
-					IJ.log("--- channel0 ---");
-					dpt3D.setup("", imp0);
-					dpt3D.InitiUserDefinedPara();
-					IJ.log("Radius:" + Double.toString(dpt3D.radius));
-					IJ.log("Cutoff:" + Double.toString(dpt3D.cutoff));
-					IJ.log("Percentile:" + Double.toString(dpt3D.percentile));	
-					//if (!dpt3D.parameterDialog()) return false; //this line must be changed as parameter setter for particle3D
-					String particles = dpt3D.DetectDots3D(imp0);
-					storeParticleInfoInObj4D(particles, obj4Dch0, "ch0");
-					IJ.log(particles);
-					//for (int i = 0; i < obj4Dch0.size(); i++) IJ.log("frame"+Integer.toString(obj4Dch0.get(i).timepoint) + ":"+ Float.toString(obj4Dch0.get(i).score));
-					IJ.log("--- channel1 ---");
-					DotSegmentByParticletracker3D dpt3D2 = new DotSegmentByParticletracker3D();
-					dpt3D2.setup("", imp1);
-					dpt3D2.InitiUserDefinedPara();
-					// at least percentile should be able to be controlled differently from ch1
-					IJ.log("Radius:" + Double.toString(dpt3D2.radius));
-					IJ.log("Cutoff:" + Double.toString(dpt3D2.cutoff));
-					IJ.log("Percentile:" + Double.toString(dpt3D2.percentile));					
-					particles = dpt3D2.DetectDots3D(imp1);
-					storeParticleInfoInObj4D(particles, obj4Dch1, "ch1");
-					IJ.log(particles);
-					//TODO there should be another process to generates bin stacks for visualization. 
-					//return false;
-					binimp0 = null;
-					binimp1 = null;
-				} else return false;	
+//				if (segMethod == 2){			
+//					IJ.log("Segmentation using Particle Tracker 3D is not completed Yet");
+//					//particle tracker3D
+//					DotSegmentByParticletracker3D dpt3D = new DotSegmentByParticletracker3D();
+//					IJ.log("--- channel0 ---");
+//					dpt3D.setup("", imp0);
+//					dpt3D.InitiUserDefinedPara();
+//					IJ.log("Radius:" + Double.toString(dpt3D.radius));
+//					IJ.log("Cutoff:" + Double.toString(dpt3D.cutoff));
+//					IJ.log("Percentile:" + Double.toString(dpt3D.percentile));	
+//					//if (!dpt3D.parameterDialog()) return false; //this line must be changed as parameter setter for particle3D
+//					String particles = dpt3D.DetectDots3D(imp0);
+//					storeParticleInfoInObj4D(particles, obj4Dch0, "ch0");
+//					IJ.log(particles);
+//					//for (int i = 0; i < obj4Dch0.size(); i++) IJ.log("frame"+Integer.toString(obj4Dch0.get(i).timepoint) + ":"+ Float.toString(obj4Dch0.get(i).score));
+//					IJ.log("--- channel1 ---");
+//					DotSegmentByParticletracker3D dpt3D2 = new DotSegmentByParticletracker3D();
+//					dpt3D2.setup("", imp1);
+//					dpt3D2.InitiUserDefinedPara();
+//					// at least percentile should be able to be controlled differently from ch1
+//					IJ.log("Radius:" + Double.toString(dpt3D2.radius));
+//					IJ.log("Cutoff:" + Double.toString(dpt3D2.cutoff));
+//					IJ.log("Percentile:" + Double.toString(dpt3D2.percentile));					
+//					particles = dpt3D2.DetectDots3D(imp1);
+//					storeParticleInfoInObj4D(particles, obj4Dch1, "ch1");
+//					IJ.log(particles);
+//					//TODO there should be another process to generates bin stacks for visualization. 
+//					//return false;
+//					binimp0 = null;
+//					binimp1 = null;
+//				} else 
+					return false;	
 			}
 		}
 		//binimp0.show();

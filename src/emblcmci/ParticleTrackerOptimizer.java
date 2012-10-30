@@ -73,35 +73,35 @@ public class ParticleTrackerOptimizer {
 	 * @param imp
 	 * @return
 	 */
-	boolean iterateSpace(ImagePlus imp){
-		int iterx = (int) Math.round((this.radiusMax - this.radiusMin)/this.radiusSteps);
-		int itery = (int) Math.round((this.percentileMax - this.percentileMin)/this.percentileSteps);
-		setResults2Obj4dV();	//currently opened dot list in Results Table becomes the reference. 
-		for (int j = 0; j < itery; j++){
-			for (int i = 0; i < iterx; i++){
-				doParticleTrack(imp, radiusMin + i * radiusSteps, 0, percentileMin + j * percentileSteps);
-				// here, there should be method to calculate with some cost function
-			}
-		}
-		return true;
-	}
+//	boolean iterateSpace(ImagePlus imp){
+//		int iterx = (int) Math.round((this.radiusMax - this.radiusMin)/this.radiusSteps);
+//		int itery = (int) Math.round((this.percentileMax - this.percentileMin)/this.percentileSteps);
+//		setResults2Obj4dV();	//currently opened dot list in Results Table becomes the reference. 
+//		for (int j = 0; j < itery; j++){
+//			for (int i = 0; i < iterx; i++){
+//				doParticleTrack(imp, radiusMin + i * radiusSteps, 0, percentileMin + j * percentileSteps);
+//				// here, there should be method to calculate with some cost function
+//			}
+//		}
+//		return true;
+//	}
 	
-	public void doParticleTrack(ImagePlus imp, double radius, double cutoff, float percentile){ 
-		obj4Dv.clear();
-		DotSegmentByParticletracker3D dpt3D = new DotSegmentByParticletracker3D(radius, cutoff, percentile);
-		dpt3D.setup("", imp);
-		printParamIJlog(dpt3D);
-		String particles = dpt3D.DetectDots3D(imp);
-		AutoThresholdAdjuster3D ata = new AutoThresholdAdjuster3D();
-		ata.storeParticleInfoInObj4D(particles, obj4Dv, "ch0");
-		IJ.log(particles);
-	}
-	
-	public void printParamIJlog(DotSegmentByParticletracker3D dpt3D){
-		IJ.log("Radius:" + Double.toString(dpt3D.radius));
-		IJ.log("Cutoff:" + Double.toString(dpt3D.cutoff));
-		IJ.log("Percentile:" + Double.toString(dpt3D.percentile));	
-	}
+//	public void doParticleTrack(ImagePlus imp, double radius, double cutoff, float percentile){ 
+//		obj4Dv.clear();
+//		DotSegmentByParticletracker3D dpt3D = new DotSegmentByParticletracker3D(radius, cutoff, percentile);
+//		dpt3D.setup("", imp);
+//		printParamIJlog(dpt3D);
+//		String particles = dpt3D.DetectDots3D(imp);
+//		AutoThresholdAdjuster3D ata = new AutoThresholdAdjuster3D();
+//		ata.storeParticleInfoInObj4D(particles, obj4Dv, "ch0");
+//		IJ.log(particles);
+//	}
+//	
+//	public void printParamIJlog(DotSegmentByParticletracker3D dpt3D){
+//		IJ.log("Radius:" + Double.toString(dpt3D.radius));
+//		IJ.log("Cutoff:" + Double.toString(dpt3D.cutoff));
+//		IJ.log("Percentile:" + Double.toString(dpt3D.percentile));	
+//	}
 	
 	/** load current Results table to Obj4D as reference.
 	 * 

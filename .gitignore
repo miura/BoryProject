@@ -1,0 +1,4 @@
+.externalToolBuilders/*
+bin/*
+imagej/*
+.DS_Store

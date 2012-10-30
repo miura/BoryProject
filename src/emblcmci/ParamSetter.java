@@ -9,8 +9,9 @@ import ij.plugin.PlugIn;
 
 public class ParamSetter{
 	
-	private String[] segMethods = { "AutoThreshold", "TrainableSegmentation", "3D_ParticleDetector" };
+//	private String[] segMethods = { "AutoThreshold", "TrainableSegmentation", "3D_ParticleDetector" };
 	
+	private String[] segMethods = { "AutoThreshold", "TrainableSegmentation"};
 	private static int segMethod = 0;
 	
 	private static int maxspotvoxels = 300000000;
@@ -106,10 +107,10 @@ public class ParamSetter{
 			IJ.log("Data for Ch1 will be laoded from " + getTrainedDataFullPath1() + "...");
 
 		}
-		if (segMethod == 2) {
-			DotSegmentByParticletracker3D param = new DotSegmentByParticletracker3D();
-			if (!param.parameterDialog()) return false;
-		}
+//		if (segMethod == 2) {
+//			DotSegmentByParticletracker3D param = new DotSegmentByParticletracker3D();
+//			if (!param.parameterDialog()) return false;
+//		}
 		return true;
 	}
 
