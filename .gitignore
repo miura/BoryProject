@@ -3,3 +3,4 @@ bin/*
 imagej/*
 .DS_Store
 target/*
+.settings/*
