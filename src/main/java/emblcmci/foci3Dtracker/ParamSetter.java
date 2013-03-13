@@ -1,4 +1,4 @@
-package emblcmci;
+package emblcmci.foci3Dtracker;
 /** Holds Parameters for AutoThresholdAdjust3D_.class
  *	Dialogue to change default values.  
  */

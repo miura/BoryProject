@@ -1,4 +1,6 @@
-import emblcmci.ParamSetter;
+package emblcmci.plugins.foci3Dtracker;
+
+import emblcmci.foci3Dtracker.ParamSetter;
 import ij.plugin.PlugIn;
 
 

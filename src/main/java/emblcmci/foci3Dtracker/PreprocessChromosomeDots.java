@@ -1,4 +1,4 @@
-package emblcmci;
+package emblcmci.foci3Dtracker;
 
 /** Preprocess image stack by several steps of filtering and corrections
  * 1. 16 bit to 8 bit
@@ -9,6 +9,7 @@ package emblcmci;
  * @author CMCI EMBL, 2010
  */
 
+import emblcmci.BleachCorrection_MH;
 import emblcmci.FFTFilter_NoGenDia;
 import ij.IJ;
 import ij.ImagePlus;

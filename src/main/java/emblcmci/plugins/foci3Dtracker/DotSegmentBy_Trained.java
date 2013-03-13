@@ -1,4 +1,6 @@
-import emblcmci.DotSegmentByTrained;
+package emblcmci.plugins.foci3Dtracker;
+
+import emblcmci.foci3Dtracker.DotSegmentByTrained;
 import ij.plugin.PlugIn;
 
 

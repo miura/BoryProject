@@ -1,4 +1,4 @@
-package emblcmci;
+package emblcmci.foci3Dtracker;
 
 /** Segmentation of yeast chromosome Foci 
  *	use 3D object counter to adjust threshold level of 3D stack. 

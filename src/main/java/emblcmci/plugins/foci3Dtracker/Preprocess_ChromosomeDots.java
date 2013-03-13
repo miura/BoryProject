@@ -1,9 +1,11 @@
+package emblcmci.plugins.foci3Dtracker;
+
 /**For prerpocessing yeast gene FOCI dots (4D)
  * Kota Miura (miura@embl.de) for Bory's project
  * 
  */
 
-import emblcmci.PreprocessChromosomeDots;
+import emblcmci.foci3Dtracker.PreprocessChromosomeDots;
 import ij.plugin.PlugIn;
 
 

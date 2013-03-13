@@ -1,4 +1,6 @@
-import emblcmci.AutoThresholdAdjuster3D;
+package emblcmci.plugins.foci3Dtracker;
+
+import emblcmci.foci3Dtracker.AutoThresholdAdjuster3D;
 import ij.plugin.PlugIn;
 
 public class AutoThresholdAdjuster3D_ implements PlugIn {

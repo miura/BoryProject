@@ -1,4 +1,4 @@
-package emblcmci;
+package emblcmci.foci3Dtracker;
 
 /** Segmentation of Chromosome dots using trained aiff data 
  * by Trainable_Segmentation without GUI.
