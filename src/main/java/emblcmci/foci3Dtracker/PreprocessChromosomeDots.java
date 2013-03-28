@@ -17,7 +17,6 @@ import ij.ImageStack;
 import ij.WindowManager;
 import ij.gui.GenericDialog;
 import ij.plugin.Duplicator;
-import ij.plugin.PlugIn;
 import ij.process.ImageConverter;
 import ij.process.ImageProcessor;
 import ij.process.ImageStatistics;
@@ -67,10 +66,12 @@ public class PreprocessChromosomeDots {
 	}
 	
 	public void run() {
-		if (null == WindowManager.getCurrentImage()) 
-			imp = IJ.openImage(); 
-		else 		
-			imp = new Duplicator().run(WindowManager.getCurrentImage());
+		if (this.imp == null){
+			if (null == WindowManager.getCurrentImage()) 
+				this.imp = IJ.openImage(); 
+			else 		
+				this.imp = WindowManager.getCurrentImage().duplicate();
+		}
 		if (null == imp) return;
 		long startTime = System.currentTimeMillis();
 		ImageConverter.setDoScaling(true);
