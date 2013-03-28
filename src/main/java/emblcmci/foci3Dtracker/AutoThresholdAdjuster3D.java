@@ -81,7 +81,7 @@ public class AutoThresholdAdjuster3D {
 	double zfactor;
 	
 	public void run() {
-
+		// ** get a list of opened windows. 
 		//copied and modified from image - color merge... (RGBStackMerge.java)
 		int[] wList = WindowManager.getIDList();
 		if (wList==null) {
@@ -96,7 +96,8 @@ public class AutoThresholdAdjuster3D {
 		}
 		String none = "*None*";
 		titles[wList.length] = none;
-
+		
+		// ** dialog for selecting image stack for each channel 
 		GenericDialog gd = new GenericDialog("Bory Dot Analysis");
 		gd.addChoice("Ch0:", titles, titles[0]);
 		gd.addChoice("Ch1:", titles, titles[1]);
@@ -113,6 +114,8 @@ public class AutoThresholdAdjuster3D {
 		ImagePlus imp0 = WindowManager.getImage(wList[index[0]]);
 		ImagePlus imp1 = WindowManager.getImage(wList[index[1]]);		
 		//cal.set
+		
+		// ** check if selected windows are stack
 		if (imp0 == null) return;
 		if (imp0.getStackSize() == 1) {
 			IJ.error("Channel 0 is not a stack");
@@ -137,7 +140,10 @@ public class AutoThresholdAdjuster3D {
 		Roi r0 = imp0.getRoi();
 		Roi r1 = imp1.getRoi();
 		Roi r = null;
-
+		
+		// ** works both with and without ROI. 
+		//    in case of ROI selected, that portion is cropped. 
+		//    ... then start of segmentation and measurements
 		if ((r0 == null) && (r1 == null))				
 			segAndMeasure( imp0, imp1);
 		else {
