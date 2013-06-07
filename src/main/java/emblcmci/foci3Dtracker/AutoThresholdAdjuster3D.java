@@ -125,15 +125,11 @@ public class AutoThresholdAdjuster3D {
 			IJ.error("Channel 1 is not a stack");
 			return;
 		}
-		cal = imp0.getCalibration();
-		if (Double.isNaN(cal.pixelDepth)) {
+		if (!setScale(imp0)){
 			IJ.error("Voxel Depth(z)is not defined correctly: check [Image -> properties]");
 			return;
 		}
-		
-		calkeep = cal.copy();
-		zfactor = cal.pixelDepth / cal.pixelWidth;
-		
+
 		IJ.log("min vox segment: " + Integer.toString(minspotvoxels) + 
 				"\n min vox measure : " + Integer.toString(minspotvoxels_measure));
 	
@@ -844,7 +840,7 @@ public class AutoThresholdAdjuster3D {
 	    * <br>
 	    * TODO in one case, dots in different daughter cells were linked. This should be avoided. 
 	    */
-	   Object4D[][] dotLinker(Vector<Object4D> obj4Dch0,  Vector<Object4D> obj4Dch1, int tframes){
+	   public Object4D[][] dotLinker(Vector<Object4D> obj4Dch0,  Vector<Object4D> obj4Dch1, int tframes){
 		   Object4D[][] linked = new Object4D[tframes][4]; 
 		   Object4D obj4Dch0id1, obj4Dch1id1;
 		   Object4D obj4Dch0id2, obj4Dch1id2;		   
@@ -896,7 +892,25 @@ public class AutoThresholdAdjuster3D {
 		   return linked;
 	   }
 	   
-
+	   public boolean setScale(ImagePlus imp){
+		   boolean gotScale = false;
+			cal = imp.getCalibration();
+			if (Double.isNaN(cal.pixelDepth)) 
+				return gotScale;
+			calkeep = cal.copy();
+			zfactor = cal.pixelDepth / cal.pixelWidth;
+			return true;
+	   }
+	   
+	   public double getZfactor(){
+		   return zfactor;
+	   }
+	   public double getXYscale(){
+		   return cal.pixelWidth;
+	   }
+	   public double getZscale(){
+		   return cal.pixelDepth;
+	   }
 }
 
 /** 
