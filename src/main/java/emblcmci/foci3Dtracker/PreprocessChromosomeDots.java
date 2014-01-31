@@ -9,8 +9,8 @@ package emblcmci.foci3Dtracker;
  * @author CMCI EMBL, 2010
  */
 
+import de.embl.cmci.FFTFilter_NoGenDia;
 import emblcmci.BleachCorrection_MH;
-import emblcmci.FFTFilter_NoGenDia;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
