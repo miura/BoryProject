@@ -12,7 +12,7 @@
 	</parent>
 
 	<groupId>embl.cmci</groupId>
-	<artifactId>Foci3D_tracker.jar</artifactId>
+	<artifactId>Foci3D_tracker</artifactId>
 	<version>1.0.0</version>
 
 	<name>plugins/Foci3D_tracker.jar</name>
