@@ -1,6 +1,6 @@
 package emblcmci.foci3Dtracker;
 
-/** Segmentation of yeast chromosome Foci 
+/** Segmentation of fission yeast chromosome Foci 
  *	use 3D object counter to adjust threshold level of 3D stack. 
  *	3D object counter must be installed in ImageJ
  *	100614 main functions now in separate classes
@@ -30,10 +30,11 @@ import ij.process.StackProcessor;
 
 public class AutoThresholdAdjuster3D {
 
-	private static boolean createComposite = true;	
+	private static boolean createComposite = true;
 	int thr, minSize, maxSize, dotSize, fontSize;
 	boolean excludeOnEdges, showObj, showSurf, showCentro, showCOM, showNb, whiteNb, newRT, showStat, showMaskedImg, closeImg, showSummary, redirect;
-
+	boolean silent = false;  // edit by Christoph
+	
 	ParamSetter para = new ParamSetter();
 	int maxspotvoxels = para.getMaxspotvoxels();
 	
@@ -72,6 +73,9 @@ public class AutoThresholdAdjuster3D {
 
 	/** Vector for storing detected dots in channel 1	 */
 	Vector<Object4D> obj4Dch1; 
+	
+	/** Array for linked 4D objects, field variable to store the results of */
+	Object4D[][] linkedArray; 
 	
 	Calibration cal, calkeep;
 	
@@ -274,21 +278,31 @@ public class AutoThresholdAdjuster3D {
 			ch0objnum = measureDots(binimp0, "Ch0", obj4Dch0, imp0.getNSlices());
 			ch1objnum = measureDots(binimp1, "Ch1", obj4Dch1, imp1.getNSlices());
 		} 
-		showStatistics(obj4Dch0);
-		showStatistics(obj4Dch1);		
-		//analysis 
 		
-		Object4D[][] linkedArray = dotLinker(obj4Dch0,  obj4Dch1, imp0.getNFrames());
+		//this part changed by Christoph
+		if (silent == false) {
+			showStatistics(obj4Dch0);
+			showStatistics(obj4Dch1);
+			}
 		
-		showDistances(linkedArray);
+		linkedArray = dotLinker(obj4Dch0,  obj4Dch1, imp0.getNFrames());
+		
+		if (silent == false) {
+			showDistances(linkedArray);
+			}
+		
 		 //if (rgbbin != null) drawlinks(linkedArray, rgbbin);
 		drawlinksGrayscale(linkedArray, imp0, imp1);
 		plotDetectedDots(obj4Dch0, imp0, Color.yellow);
 		plotDetectedDots(obj4Dch1, imp1, Color.red);
 		
+		//end edit by Christoph
 		
 		return true; 
 	}
+	
+	
+	
 	/** Stores particle parameters 
 	 * <ul>
 	 * <li>centroid<li>coordinates<li>moments<li>scores
@@ -709,6 +723,22 @@ public class AutoThresholdAdjuster3D {
 		+" : IntDen"+Float.toString(cObj.int_dens);
 		return opt;
 	}
+	
+	
+	// method added by Christoph
+	public void setSilent(boolean z){
+		silent = z;
+	}
+	
+	//public Vector<Object4D> getStatistics(){ // would be nicer to have argument int channel here.
+	//	return []
+	//}
+	
+	public Object4D[][] getLinkedArray(){
+		return linkedArray;
+	}
+	
+	
 	/**
 	 * Show Object4D vector in Results window. 
 	 * 
@@ -732,6 +762,7 @@ public class AutoThresholdAdjuster3D {
 	       
 	        rt.show("Statistics_"+obj4Dv.get(0).chnum);     
 	    }
+	   
 	   public void showDistances(Object4D[][] linked){
 	        ResultsTable rt;        
 	        rt=new ResultsTable();
@@ -971,6 +1002,11 @@ class ComparerByscore4D implements Comparator<Object4D> {
         return i;
     }
 }
+
+
+
+
+
 
 
 

@@ -67,7 +67,7 @@ public class PreprocessChromosomeDots {
 	public void run() {
 		if (this.imp == null){
 			if (null == WindowManager.getCurrentImage()) 
-				this.imp = IJ.openImage(); 
+				this.imp = IJ.openImage();
 			else 		
 				this.imp = WindowManager.getCurrentImage().duplicate();
 		}
