@@ -14,10 +14,10 @@ public class ParamSetter{
 	private String[] segMethods = { "AutoThreshold", "TrainableSegmentation"};
 	private static int segMethod = 0;
 	
-	private static int maxspotvoxels = 300000000;
+	private static int maxspotvoxels = 900; // 800 voxels based on measurement of nice dot in dtTomato channel (5px * 8px * 18px); Improved segmentation and lowered computation time considerably! was 3000000;
 	
 	/**Object volume minimum for volume-based segmentation*/
-	private static int minspotvoxels = 3;	
+	private static int minspotvoxels = 20;	// was 3
 	
 	/**object volume minimum for measurement
 	 *  (maybe 7 is too small)*/
