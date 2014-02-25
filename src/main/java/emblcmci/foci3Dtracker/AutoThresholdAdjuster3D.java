@@ -32,8 +32,9 @@ public class AutoThresholdAdjuster3D {
 
 	private static boolean createComposite = true;
 	int thr, minSize, maxSize, dotSize, fontSize;
-	boolean excludeOnEdges, showObj, showSurf, showCentro, showCOM, showNb, whiteNb, newRT, showStat, showMaskedImg, closeImg, showSummary, redirect;
+	boolean excludeOnEdges, showObj, showSurf, showCentro, showCOM, showNb, whiteNb, newRT, showStat, closeImg, showSummary, redirect;
 	boolean silent = false;  // edit by Christoph
+	boolean showMaskedImg = false;
 	
 	ParamSetter para = new ParamSetter();
 	int maxspotvoxels = para.getMaxspotvoxels();
@@ -177,7 +178,9 @@ public class AutoThresholdAdjuster3D {
 			imp0roi = new ImagePlus("croppedCh0", cropstack);
 			imp0roi.setCalibration(cal);
 			imp0roi.setDimensions(imp0.getNChannels(), imp0.getNSlices(), imp0.getNFrames());
-			imp0roi.show();
+			if (silent == false){
+				imp0roi.show();
+			}
 			
 			tempdup = new Duplicator().run(imp1);
 			tempstackproc  = new StackProcessor(tempdup.getStack(),tempdup.getStack().getProcessor(1));
@@ -185,7 +188,9 @@ public class AutoThresholdAdjuster3D {
 			imp1roi = new ImagePlus("croppedCh1", cropstack);
 			imp1roi.setCalibration(cal);
 			imp1roi.setDimensions(imp1.getNChannels(), imp1.getNSlices(), imp1.getNFrames());
-			imp1roi.show();
+			if (silent == false){
+				imp1roi.show();
+			}
 						
 			segAndMeasure(imp0roi, imp1roi);
 		}
@@ -614,7 +619,7 @@ public class AutoThresholdAdjuster3D {
 		ImagePlus impcopy = dup.run(imp);
 		// check initial condition
 		excludeOnEdges = false;
-		redirect = false; 
+		redirect = false; // this is the option to suppress the showing of masked images??
 		Counter3D OC = new Counter3D(impcopy, initTh, minspotvoxels, (int) maxspotvoxels*2, excludeOnEdges, redirect);
 		Vector<Object3D> obj = OC.getObjectsList();
 		int nobj = obj.size();

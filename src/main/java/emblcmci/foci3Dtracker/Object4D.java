@@ -104,4 +104,8 @@ public class Object4D extends Object3D{
 		this.centroid = centroid;
 	}
 	
+	public int getTimepoint(){
+		return this.timepoint;
+	}
+	
 }
