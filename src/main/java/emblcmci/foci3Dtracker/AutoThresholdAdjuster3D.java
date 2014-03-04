@@ -490,7 +490,7 @@ public class AutoThresholdAdjuster3D {   // there should be a constructor with r
 		int maxth = (int) Math.pow(2,imp.getBitDepth());
 		for(int i =0; i<tframes; i++){
 			impcopy = dup.run(imp, (i*zframes+1), (i+1)*zframes);
-			minth = initializeThresholdLevel(impcopy, 25); //second argument is cutoff pixel area in histogram upper part. (make mym dependent?)
+			minth = initializeThresholdLevel(impcopy, maxObjSizeXY); //second argument is cutoff pixel area in histogram upper part. (make mym dependent?)
 			IJ.log(Integer.toString(i)+": initial threshold set to "+Double.toString(minth));
 			adjth = (int) ThresholdAdjusterBy3Dobj(imp, (int)minth, this.thadj_volmin, this.thadj_volmax, this.thadj_nummin, this.thadj_nummax);
 			IJ.log("... ... Adjusted to "+Integer.toString(adjth));
@@ -740,9 +740,9 @@ public class AutoThresholdAdjuster3D {   // there should be a constructor with r
 		   double dist = -1.0;
 		   if ((obj1.centroid.length > 1) && (obj2.centroid.length > 1)) {
 			   double sqd = (
-					   Math.pow(obj1.centroid[0] - obj2.centroid[0], 2) 
-					   + Math.pow(obj1.centroid[1] - obj2.centroid[1], 2) 
-					   + Math.pow((obj1.centroid[2] - obj2.centroid[2])*zfactor, 2)
+					   Math.pow(obj1.centroid[0] - obj2.centroid[0], 2.0)    // changed 2 to 2.0
+					   + Math.pow(obj1.centroid[1] - obj2.centroid[1], 2.0) 
+					   + Math.pow((obj1.centroid[2] - obj2.centroid[2])*zfactor, 2.0)
 					);
 			   dist = Math.pow(sqd, 0.5);
 		   }	

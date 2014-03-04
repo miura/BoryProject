@@ -149,26 +149,25 @@ public class AutoThrAdj3D_rewrite {
 		ImagePlus binimp = bin.run(imp);
 		int nSlices = imp.getNSlices();
 		int tframes = imp.getNFrames();
-		double minth = 0.0;        // initializing minimal threshold
+		double minTh = 0.0; // why is this a double here and later to int?
 		int adjth = 0;
 		Duplicator dup = new Duplicator();	//this duplication may not be necessary
 		ImagePlus impcopy = null;
-		int maxth = (int) Math.pow(2,imp.getBitDepth());
 		for(int i = 0; i<tframes; i++){
 			impcopy = dup.run(imp, (i*nSlices+1), (i+1)*nSlices);
 			/*on initialize ThresholdLevel: second argument is cutoff pixel area in histogram upper part. 
-			TODO 1. make µm dependent?, 2. Is there some measurement on which the 25 is based?
+			TODO 1. make µm^2 dependent?, 2. Is there some measurement on which the 25 is based?
 			Moved the 25 px to "segmentation parameters" this.maxXYArea*/
-			int minTh = estimateThreshold(impcopy, this.maxXYArea);
-			IJ.log(Integer.toString(i) + ": initial threshold set to " + Double.toString(minth));
-			adjth = (int) ThresholdAdjusterBy3Dobj(imp, (int)minth, this.thadj_volmin, this.thadj_volmax, this.thadj_nummin, this.thadj_nummax);
+			minTh = estimateThreshold(impcopy, this.maxXYArea);
+			IJ.log(Integer.toString(i) + ": initial threshold set to " + Double.toString(minTh));
+			adjth = (int) ThresholdAdjusterBy3Dobj(imp, (int)minTh, this.thadj_volmin, this.thadj_volmax, this.thadj_nummin, this.thadj_nummax);
 			IJ.log("... ... Adjusted to " + Integer.toString(adjth));
-			
 			for (int j=0; j<nSlices; j++)
 				binimp.getStack().getProcessor(i*nSlices+1+j).threshold(adjth);
 		}
 		return binimp;
 	}
+	
 	
 	/* Calculate an estimated threshold value for 3D stack with dark background,
 	   based on expected XY area (in pixel) of the object */
@@ -205,8 +204,8 @@ public class AutoThrAdj3D_rewrite {
 			 Object3D currObj=obj.get(i);
 			 volumesum += currObj.size;
 		}
-		IJ.log("Threshold Adjuster initial th: "+ Integer.toString(initTh) +" ObjNum: "+Integer.toString(nobj)+"Volume Sum: "+Integer.toString(volumesum));
-		localthres = initTh;
+		IJ.log("Threshold Adjuster initial th: "+ Integer.toString(estimatedTh) +" ObjNum: "+Integer.toString(nobj)+"Volume Sum: "+Integer.toString(volumesum));
+		localthres = estimatedTh;
 		int loopcount =0;
 		while ( 
 				(nobj < thadj_nummin || nobj > thadj_nummax || volumesum > thadj_volmax || volumesum <thadj_volmin) 
