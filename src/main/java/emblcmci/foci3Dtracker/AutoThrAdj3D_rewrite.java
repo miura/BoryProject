@@ -54,6 +54,9 @@ public class AutoThrAdj3D_rewrite {
 	/** Array for linked 4D objects, field variable to store the results of linking process */
 	Object4D[][] linkedArray; 
 	
+	/** z-Projection image of detected dots */
+	ImagePlus resultsImage;
+	
 	Calibration cal, calkeep;
 	
 	/*Constructors*/
@@ -123,9 +126,11 @@ public class AutoThrAdj3D_rewrite {
 		int ch1objnum = 0; 
 		ch0objnum = measureDots(binimp0, "Ch0", obj4Dch0);
 		ch1objnum = measureDots(binimp1, "Ch1", obj4Dch1);		
-		linkedArray = dotLinker(obj4Dch0,  obj4Dch1, imp0.getNFrames());
+		this.linkedArray = dotLinker(obj4Dch0,  obj4Dch1, imp0.getNFrames());
 		
-		if (silent == false) {
+		this.resultsImage = drawlinksGrayscale()
+		
+		/*if (silent == false) {
 			showStatistics(obj4Dch0);
 			showStatistics(obj4Dch1);
 			showDistances(linkedArray);
@@ -133,7 +138,7 @@ public class AutoThrAdj3D_rewrite {
 		
 		drawlinksGrayscale(linkedArray, imp0, imp1);
 		plotDetectedDots(obj4Dch0, imp0, Color.yellow);
-		plotDetectedDots(obj4Dch1, imp1, Color.red);
+		plotDetectedDots(obj4Dch1, imp1, Color.red);*/
 		return true; 
 	}
 	
@@ -156,7 +161,7 @@ public class AutoThrAdj3D_rewrite {
 		for(int i = 0; i<tframes; i++){
 			impcopy = dup.run(imp, (i*nSlices+1), (i+1)*nSlices);
 			/*on initialize ThresholdLevel: second argument is cutoff pixel area in histogram upper part. 
-			TODO 1. make µm^2 dependent?, 2. Is there some measurement on which the 25 is based?
+			TODO 1. make micron^2 dependent?, 2. Is there some measurement on which the 25 is based?
 			Moved the 25 px to "segmentation parameters" this.maxXYArea*/
 			minTh = estimateThreshold(impcopy, this.maxXYArea);
 			IJ.log(Integer.toString(i) + ": initial threshold set to " + Double.toString(minTh));
@@ -261,9 +266,9 @@ public class AutoThrAdj3D_rewrite {
 		double dist = -1.0;
 		
 		if ((obj1.centroid.length > 1) && (obj2.centroid.length > 1)) {
-			double sqd = (Math.pow( (obj1.centroid[0] - obj2.centroid[0]), 2.0)    // changed 2 to 2.0
-					   + Math.pow( (obj1.centroid[1] - obj2.centroid[1]), 2.0) 
-					   + Math.pow( (obj1.centroid[2] - obj2.centroid[2]), 2.0)
+			double sqd = (Math.pow( cal.getX(obj1.centroid[0] - obj2.centroid[0]), 2.0)    // changed 2 to 2.0
+					    + Math.pow( cal.getY(obj1.centroid[1] - obj2.centroid[1]), 2.0) 
+					    + Math.pow( cal.getZ(obj1.centroid[2] - obj2.centroid[2]), 2.0)
 						 );
 			dist = Math.pow(sqd, 0.5);
 		   }	
@@ -274,9 +279,9 @@ public class AutoThrAdj3D_rewrite {
 	public int measureDots(ImagePlus imp, String chnum, // removed argument zframes, should be in imp format!
 				Vector<Object4D> obj4dv) {
 			
-			int nSlices = imp.getNSlices();  // nSlices: number of z slices
+			int nSlices = imp.getNSlices();  //nSlices: number of z slices
 			if (nSlices ==1) return -1;			
-			int nFrames = imp.getNFrames();  // nFrames: number of timeframes
+			int nFrames = imp.getNFrames();  //nFrames: number of timeframes
 		
 			ImagePlus imps = null;
 			Duplicator singletime = new Duplicator();
@@ -302,7 +307,133 @@ public class AutoThrAdj3D_rewrite {
 				 } 
 			} 
 			return obj4dv.size();
-		}
+	}
+	   
+	/** Link objects in two channels<br>
+	* <br>
+	* assumes that <b>there is only one or two pairs</b>.<br>
+	* Picks up largest and/or nearest particle first.  
+	* <br>
+	* TODO in one case, dots in different daughter cells were linked. This should be avoided.
+	* TODO make more flexible in terms of number of objects, e. g. 8 dots in meiosis 1.
+	*/
+	public Object4D[][] dotLinker(Vector<Object4D> obj4Dch0,  Vector<Object4D> obj4Dch1, int tframes){
+		Object4D[][] linked = new Object4D[tframes][4]; //also make 
+		Object4D obj4Dch0id1, obj4Dch1id1;
+		Object4D obj4Dch0id2, obj4Dch1id2;		   
+		int flag = 0;
+		   
+		for (int i = 0; i < tframes; i++){
+			obj4Dch0id1 = returnObj4D(obj4Dch0, i, 1);	
+			obj4Dch1id1 = returnObj4D(obj4Dch1, i, 1);
+			obj4Dch0id2 = returnObj4D(obj4Dch0, i, 2);	
+			obj4Dch1id2 = returnObj4D(obj4Dch1, i, 2);
+			
+			if ((obj4Dch0id1 != null) && (obj4Dch1id1 != null)) {
+				// 1x1 case
+				if ((obj4Dch0id2 == null) && (obj4Dch1id2 == null)) { 
+					linked[i][0] = obj4Dch0id1;
+					linked[i][1] = obj4Dch1id1;				   
+				}
+				else {
+				// 2x2 both channels contain multiple dots
+					 if ((obj4Dch0id2 != null) && (obj4Dch1id2 != null)) {
+						flag = compare2x2(i);
+					 	if (flag == 1) {
+					 		linked[i][0] = obj4Dch0id1;
+					 		linked[i][1] = obj4Dch1id1;
+					 		linked[i][2] = obj4Dch0id2;
+					 		linked[i][3] = obj4Dch1id2;							   
+						 	}
+					 	else {
+							  linked[i][0] = obj4Dch0id1;
+							  linked[i][1] = obj4Dch1id2;
+							  linked[i][2] = obj4Dch0id2;
+							  linked[i][3] = obj4Dch1id1;
+						    }
+					   } 
+					 else {
+					//2x1 one channel contains only one dots
+						   flag = compare2x1(i);
+						   if (flag == 1) {
+							   linked[i][0] = obj4Dch0id1;
+							   linked[i][1] = obj4Dch1id1;
+						   } else {
+							   if (flag == 2){
+								   linked[i][0] = obj4Dch0id1;
+								   linked[i][1] = obj4Dch1id2;
+							   } else {
+								   linked[i][0] = obj4Dch0id2;
+								   linked[i][1] = obj4Dch1id1;
+							   }
+						   }
+					   }
+				   }
+			   }
+		   }
+		   return linked;
+	   }
+	
+	   // dotID could only be 1 or 2 (0 does not exist)
+	   Object4D returnObj4D(Vector<Object4D> obj4Dv, int tpoint, int dotID){
+		   Object4D retobj4D = null;
+		   for (int i=0; i<obj4Dv.size(); i++){
+			   if ((obj4Dv.get(i).timepoint == tpoint) 
+				  && (obj4Dv.get(i).dotID == dotID)){
+				  
+				   retobj4D = obj4Dv.get(i);
+			   }
+		   }		   
+		   return retobj4D;
+	   }
+	   
+	   //since there is only one dot in a channel, there could be only one link, with three cases
+	   int compare2x1(int tpoint){
+		   int flag = 0;
+		   int ch0dots = returnDotNumber(obj4Dch0, tpoint);
+		   //int ch1dots = returnDotNumber(obj4Dch1, tpoint);
+		   Object4D ch0id1  = returnObj4D(obj4Dch0, tpoint, 1);
+		   Object4D ch1id1  = returnObj4D(obj4Dch1, tpoint, 1);
+		   if (ch0dots == 1) {
+			   Object4D ch1id2  = returnObj4D(obj4Dch1, tpoint, 2);
+			   double dist1 =returnDistance(ch0id1, ch1id1);
+			   double dist2 =returnDistance(ch0id1, ch1id2);
+			   if (dist1 < dist2) flag = 1;
+			   else flag = 2;
+		   } else {
+			   Object4D ch0id2  = returnObj4D(obj4Dch0, tpoint, 2);
+			   double dist1 =returnDistance(ch0id1, ch1id1);
+			   double dist2 =returnDistance(ch0id2, ch1id1);
+			   if (dist1 < dist2) flag = 1;
+			   else flag = 3;			   
+		   }
+		   return flag;
+	   }
+	   
+	   //only two cases  of combinations
+	   int compare2x2(int tpoint){
+		   int flag =0;
+		   Object4D ch0id1  = returnObj4D(obj4Dch0, tpoint, 1);
+		   Object4D ch0id2  = returnObj4D(obj4Dch0, tpoint, 2);
+		   Object4D ch1id1  = returnObj4D(obj4Dch1, tpoint, 1);
+		   Object4D ch1id2  = returnObj4D(obj4Dch1, tpoint, 2);
+		   double dist1 = returnDistance(ch0id1, ch1id1) + returnDistance(ch0id2, ch1id2);
+		   double dist2 = returnDistance(ch0id1, ch1id2) + returnDistance(ch0id2, ch1id1);
+		   if (dist1 < dist2) flag = 1;
+		   else flag = 2;		   
+		   return flag;
+	   }
+	   
+	   // returns number of dots at single time point
+	   int returnDotNumber(Vector<Object4D> obj4D, int timepoint){
+		   int counter =0;
+		   for (int i=0; i<obj4D.size(); i++){
+			   if (obj4D.get(i).timepoint == timepoint) counter++;
+		   }
+		   return counter;
+	   }
+	   
+	   /**Methods for graphical output */
 	   
 	   
 }
