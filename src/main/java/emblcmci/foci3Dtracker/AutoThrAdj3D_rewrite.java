@@ -12,6 +12,7 @@ import java.util.Vector;
 
 import ij.plugin.Duplicator;
 import ij.plugin.RGBStackMerge;
+import ij.plugin.StackCombiner;
 import ij.plugin.ZProjector;
 import ij.*;
 import Utilities.Counter3D;
@@ -29,7 +30,7 @@ import ij.process.StackProcessor;
 public class AutoThrAdj3D_rewrite {
 
 	// Segmentation parameters
-	int maxXYArea = 25;   // maximal area in px of the dot on z-projection, default 25 px
+	int maxYXPixels = 25;   // maximal area in px of the dot on z-projection, default 25 px
 	int maxspotvoxels, minspotvoxels;
 	int minspotvoxels_measure;
 	int maxloops;
@@ -64,7 +65,7 @@ public class AutoThrAdj3D_rewrite {
 	public AutoThrAdj3D_rewrite(){} // do I really need  or can I construct without arguments anyway?!?
 	
 	//Constructor with segmentation parameters as arguments
-	public AutoThrAdj3D_rewrite(int maxXYArea,
+	public AutoThrAdj3D_rewrite(int maxXYPixels,
 								int maxspotvoxels, 
 								int minspotvoxels,
 								int minspotvoxels_measure,
@@ -73,7 +74,7 @@ public class AutoThrAdj3D_rewrite {
 								int thadj_volmax,
 								int thadj_nummin,
 								int thadj_nummax){
-		this.maxXYArea = maxXYArea;
+		this.maxYXPixels = maxXYPixels;
 		this.maxspotvoxels = maxspotvoxels;
 		this.minspotvoxels = minspotvoxels;
 		this.minspotvoxels_measure = minspotvoxels_measure;
@@ -162,8 +163,8 @@ public class AutoThrAdj3D_rewrite {
 			impcopy = dup.run(imp, (i*nSlices+1), (i+1)*nSlices);
 			/*on initialize ThresholdLevel: second argument is cutoff pixel area in histogram upper part. 
 			TODO 1. make micron^2 dependent?, 2. Is there some measurement on which the 25 is based?
-			Moved the 25 px to "segmentation parameters" this.maxXYArea*/
-			minTh = estimateThreshold(impcopy, this.maxXYArea);
+			Moved the 25 px to "segmentation parameters" this.maxYXPixels*/
+			minTh = estimateThreshold(impcopy, this.maxYXPixels);
 			IJ.log(Integer.toString(i) + ": initial threshold set to " + Double.toString(minTh));
 			adjth = (int) ThresholdAdjusterBy3Dobj(imp, (int)minTh, this.thadj_volmin, this.thadj_volmax, this.thadj_nummin, this.thadj_nummax);
 			IJ.log("... ... Adjusted to " + Integer.toString(adjth));
@@ -435,5 +436,58 @@ public class AutoThrAdj3D_rewrite {
 	   
 	   /**Methods for graphical output */
 	   
+	   /**plotting linked lines, but with original gray scale image (will be converted to RGB).
+		 * 
+		 * @param linked
+		 * @param imp0
+		 * @param imp1
+		 * @author Kota Miura
+		 * modified by Christoph Schiklenk
+		 */
+		public void drawlinksGrayscale(Object4D[][] linked, ImagePlus imp0, ImagePlus imp1){
+			ImagePlus ch0proj = null;
+			ImagePlus ch1proj = null;
+
+			ZProjector zp0 = new ZProjector(imp0);
+			zp0.doHyperStackProjection(true);
+			ch0proj = zp0.getProjection();
+			
+			ZProjector zp1 = new ZProjector(imp1);
+			zp1.doHyperStackProjection(true);
+			ch1proj = zp1.getProjection();
+
+			new StackConverter(ch0proj).convertToRGB();
+			new StackConverter(ch1proj).convertToRGB();
+			
+			int offset = 0;
+			int ch0x, ch0y, ch1x, ch1y;
+			for(int i = 0;  i < linked.length; i++) {
+				for(int j = 0;  j < linked[0].length; j += 2) {
+					if (linked[i][j] != null){
+						ch0x = Math.round(linked[i][j].centroid[0] - offset);
+						ch0y = Math.round(linked[i][j].centroid[1] - offset);
+						ch1x = Math.round(linked[i][j + 1].centroid[0] - offset);
+						ch1y = Math.round(linked[i][j + 1].centroid[1] - offset);
+						ImageProcessor ip0 = ch0proj.getStack().getProcessor(linked[i][j].timepoint + 1);
+						ip0.setColor(Color.blue);
+						ip0.drawLine(ch0x, ch0y, ch1x, ch1y);
+						ip0.setColor(Color.yellow);
+						ip0.drawPixel(ch0x, ch0y);
+						ip0.setColor(Color.red);
+						ip0.drawPixel(ch1x, ch1y);					
+						ImageProcessor ip1 = ch1proj.getStack().getProcessor(linked[i][j].timepoint + 1);
+						ip1.setColor(Color.blue);
+						ip1.drawLine(ch0x, ch0y, ch1x, ch1y);
+						ip1.setColor(Color.yellow);
+						ip1.drawPixel(ch0x, ch0y);
+						ip1.setColor(Color.red);
+						ip1.drawPixel(ch1x, ch1y);
+					}	
+				}
+			}
+			ImageStack combined = new StackCombiner().combineHorizontally(ch0proj.getStack(), ch1proj.getStack());
+			ImagePlus combimp = new ImagePlus("DetectedDots", combined);
+			combimp.show();
+		}
 	   
 }
