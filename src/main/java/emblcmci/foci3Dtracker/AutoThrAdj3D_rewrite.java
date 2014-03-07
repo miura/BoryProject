@@ -1,7 +1,7 @@
 package emblcmci.foci3Dtracker;
 
-/*Christoph rewrites custom version of AutothresholdAdjuster3D from Kota
- * schiklen@embl.de
+/*Christoph (schiklen@embl.de) rewrites custom version of AutothresholdAdjuster3D from Kota Miura (CMCI, miura@embl.de)
+ *
  */
 
 import java.awt.Color;
@@ -26,7 +26,6 @@ import ij.measure.ResultsTable;
 import ij.plugin.*;
 import ij.process.ImageProcessor;
 import ij.process.StackConverter;
-import ij.process.StackProcessor;
 
 public class AutoThrAdj3D_rewrite {
 
@@ -454,8 +453,9 @@ public class AutoThrAdj3D_rewrite {
 			ImagePlus ch0proj = null;
 			ImagePlus ch1proj = null;
 			
-			ch0proj = createZprojTimeSeries(imp0, imp0.getNSlices(), imp0.getNFrames() );
-			ch1proj = createZprojTimeSeries(imp1, imp1.getNSlices(), imp1.getNFrames() );
+			GroupedZProjector gzp = new GroupedZProjector();
+			ch0proj = gzp.groupZProject(imp0, 1, imp0.getNSlices());
+			ch1proj = gzp.groupZProject(imp1, 1, imp1.getNSlices());
 			
 			new StackConverter(ch0proj).convertToRGB();
 			new StackConverter(ch1proj).convertToRGB();
@@ -545,41 +545,4 @@ public class AutoThrAdj3D_rewrite {
 		        rt.show("Statistics_Distance");     
 		    }
 		   
-			/** Z projection of 4D stack, each time point projected to 2D.<br> 
-			 *this might not be usefule these days as native z-projection supports 4D. 
-			 * @param imp: 4D stack ImagePlus
-			 * @param zframes: number of z slices
-			 * @param tframes: number of time points.
-			 * @return
-			 */
-			public ImagePlus createZprojTimeSeries(ImagePlus imp, int zframes, int tframes){
-				Duplicator dpc = new Duplicator();
-				ImagePlus dImp = dpc.run(imp);
-				ImagePlus[] imps = ChannelSplitter.split(dImp);
-				GroupedZProjector gzp = new GroupedZProjector();
-				for (ImagePlus i : imps) {
-					ImagePlus n = gzp.groupZProject(i, 1, i.getNSlices());
-					n.show();
-				}
-/*gzp = GroupedZProjector()
-for i in imps:
-	n = gzp.groupZProject(i, 1, i.getNSlices())
-	n.show()*/
-				
-				
-				ImageStack zprostack = new ImageStack();
-				zprostack = imp.createEmptyStack();
-				ZProjector zpimp = new ZProjector(imp);
-				zpimp.setMethod(1); //1 is max intensity projection	
-				for (int i=0; i<tframes;i++){
-					zpimp.setStartSlice(i*zframes+1);
-					zpimp.setStopSlice((i+1)*zframes);
-					zpimp.doProjection();
-					zprostack.addSlice("t="+Integer.toString(i+1), zpimp.getProjection().getProcessor());
-				}
-				ImagePlus projimp = new ImagePlus("proj" + imp.getTitle(), zprostack);
-				//projimp.setStack(zprostack);
-				return projimp;				
-			}
-	   
 }
