@@ -465,7 +465,6 @@ public class AutoThresholdAdjuster3D {   // there should be a constructor with r
 		}
 		ImagePlus projimp = new ImagePlus("proj" + imp.getTitle(), zprostack);
 		//projimp.setStack(zprostack);
-		
 		return projimp;				
 	}
 	

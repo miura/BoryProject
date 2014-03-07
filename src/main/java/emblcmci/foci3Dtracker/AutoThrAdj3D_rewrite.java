@@ -14,6 +14,7 @@ import ij.plugin.Duplicator;
 import ij.plugin.RGBStackMerge;
 import ij.plugin.StackCombiner;
 import ij.plugin.ZProjector;
+import ij.plugin.GroupedZProjector;
 import ij.*;
 import Utilities.Counter3D;
 import Utilities.Object3D;
@@ -38,8 +39,8 @@ public class AutoThrAdj3D_rewrite {
 	int thadj_nummin, thadj_nummax;
 
 	private static boolean createComposite = true;
-	int thr, minSize, maxSize, dotSize, fontSize;
-	boolean excludeOnEdges, showObj, showSurf, showCentro, showCOM, showNb, whiteNb, newRT, showStat, closeImg, showSummary, redirect;
+	int thr, minSize, maxSize, dotSize, fontSize;  // minSize, maxSize redundant to minspotvoxels_measure, maxspotvoxels, minspotvoxels?
+	boolean excludeOnEdges, newRT, redirect;
 	boolean silent = false;
 	boolean showMaskedImg = false;
 	
@@ -56,7 +57,7 @@ public class AutoThrAdj3D_rewrite {
 	Object4D[][] linkedArray; 
 	
 	/** z-Projection image of detected dots */
-	ImagePlus resultsImage;
+	ImagePlus linkedImage;
 	
 	Calibration cal, calkeep;
 	
@@ -107,6 +108,10 @@ public class AutoThrAdj3D_rewrite {
 	public Object4D[][] getLinkedArray(){
 		return linkedArray;
 		}
+	
+	public ImagePlus getLinkedImp(){
+		return this.linkedImage;
+	}
 
  // - - - - - - - - - - S E G M E T H O D S - - - - - - - - - - - - - -
 	/* 
@@ -120,7 +125,7 @@ public class AutoThrAdj3D_rewrite {
 		binimp0 = segmentaitonByObjectSize(imp0);
 		binimp1 = segmentaitonByObjectSize(imp1);
 		
-		ImagePlus rgbbin = null;
+		//ImagePlus rgbbin = null;
 
 		//3D object measurement part
 		int ch0objnum = 0; 
@@ -129,17 +134,17 @@ public class AutoThrAdj3D_rewrite {
 		ch1objnum = measureDots(binimp1, "Ch1", obj4Dch1);		
 		this.linkedArray = dotLinker(obj4Dch0,  obj4Dch1, imp0.getNFrames());
 		
-		this.resultsImage = drawlinksGrayscale()
+		this.linkedImage = drawlinksGrayscale(this.linkedArray, imp0, imp1);
 		
-		/*if (silent == false) {
+		if (silent == false) {
 			showStatistics(obj4Dch0);
 			showStatistics(obj4Dch1);
 			showDistances(linkedArray);
 			}
 		
 		drawlinksGrayscale(linkedArray, imp0, imp1);
-		plotDetectedDots(obj4Dch0, imp0, Color.yellow);
-		plotDetectedDots(obj4Dch1, imp1, Color.red);*/
+		//plotDetectedDots(obj4Dch0, imp0, Color.yellow);
+		//plotDetectedDots(obj4Dch1, imp1, Color.red);
 		return true; 
 	}
 	
@@ -319,7 +324,7 @@ public class AutoThrAdj3D_rewrite {
 	* TODO make more flexible in terms of number of objects, e. g. 8 dots in meiosis 1.
 	*/
 	public Object4D[][] dotLinker(Vector<Object4D> obj4Dch0,  Vector<Object4D> obj4Dch1, int tframes){
-		Object4D[][] linked = new Object4D[tframes][4]; //also make 
+		Object4D[][] linked = new Object4D[tframes][4]; //also make available for Meiosis: 8!
 		Object4D obj4Dch0id1, obj4Dch1id1;
 		Object4D obj4Dch0id2, obj4Dch1id2;		   
 		int flag = 0;
@@ -443,19 +448,15 @@ public class AutoThrAdj3D_rewrite {
 		 * @param imp1
 		 * @author Kota Miura
 		 * modified by Christoph Schiklenk
+		 * @return 
 		 */
-		public void drawlinksGrayscale(Object4D[][] linked, ImagePlus imp0, ImagePlus imp1){
+		public ImagePlus drawlinksGrayscale(Object4D[][] linked, ImagePlus imp0, ImagePlus imp1){
 			ImagePlus ch0proj = null;
 			ImagePlus ch1proj = null;
-
-			ZProjector zp0 = new ZProjector(imp0);
-			zp0.doHyperStackProjection(true);
-			ch0proj = zp0.getProjection();
 			
-			ZProjector zp1 = new ZProjector(imp1);
-			zp1.doHyperStackProjection(true);
-			ch1proj = zp1.getProjection();
-
+			ch0proj = createZprojTimeSeries(imp0, imp0.getNSlices(), imp0.getNFrames() );
+			ch1proj = createZprojTimeSeries(imp1, imp1.getNSlices(), imp1.getNFrames() );
+			
 			new StackConverter(ch0proj).convertToRGB();
 			new StackConverter(ch1proj).convertToRGB();
 			
@@ -487,7 +488,98 @@ public class AutoThrAdj3D_rewrite {
 			}
 			ImageStack combined = new StackCombiner().combineHorizontally(ch0proj.getStack(), ch1proj.getStack());
 			ImagePlus combimp = new ImagePlus("DetectedDots", combined);
-			combimp.show();
+			return combimp;
 		}
+		
+		/**
+		 * Show Object4D vector in Results window. 
+		 * @param obj4Dv Vector<Object4D>
+		 */
+		   public void showStatistics(Vector<Object4D> obj4Dv){
+		        ResultsTable rt;        
+		        rt=new ResultsTable();	        
+		        for (int i=0; i<obj4Dv.size(); i++){
+		            if (obj4Dv.get(i).centroid.length > 1){
+		            	rt.incrementCounter();
+		            	rt.setValue("frame", i, obj4Dv.get(i).timepoint);
+		            	rt.setValue("dotID", i, obj4Dv.get(i).dotID);
+		            	rt.setValue("Volume", i, obj4Dv.get(i).size);
+		            	rt.setValue("x", i, obj4Dv.get(i).centroid[0]);
+			            rt.setValue("y", i, obj4Dv.get(i).centroid[1]);
+			            rt.setValue("z", i, obj4Dv.get(i).centroid[2]);
+			            rt.setValue("Intden", i, obj4Dv.get(i).int_dens);
+		            }
+		        }
+		       
+		        rt.show("Statistics_"+obj4Dv.get(0).chnum);     
+		    }
+		   
+		   public void showDistances(Object4D[][] linked){
+		        ResultsTable rt;        
+		        rt = new ResultsTable();
+		        int ct = 0;
+		        double ch0ch1dist = -1;
+		        for (int i=0; i<linked.length; i++){
+		        	for (int j = 0; j < linked[0].length; j += 2){
+			        	if ((linked[i][j] != null) && (linked[i][j+1] != null)){
+			        		rt.incrementCounter();
+			        		ch0ch1dist = returnDistance(linked[i][j], linked[i][j+1]);
+			        		rt.setValue("frame", ct, linked[i][j].timepoint);
+				            rt.setValue("ch0-ch1_dist", ct, ch0ch1dist);
+				            double ch0dist = 0;
+				            double ch1dist = 0;
+							if (linked[i][3] != null) {
+				            	ch0dist = returnDistance(linked[i][0], linked[i][2]);
+								ch1dist = returnDistance(linked[i][1], linked[i][3]);
+							}
+				            rt.setValue("ch0-ch0_dist", ct, ch0dist);
+				            rt.setValue("ch1-ch1_dist", ct, ch1dist);
+				            rt.setValue("ch0vol", ct, linked[i][j].size);
+				            rt.setValue("ch1vol", ct, linked[i][j+1].size);
+				            
+				            ct++;
+			        	}
+		        	}
+		        }
+		       
+		        rt.show("Statistics_Distance");     
+		    }
+		   
+			/** Z projection of 4D stack, each time point projected to 2D.<br> 
+			 *this might not be usefule these days as native z-projection supports 4D. 
+			 * @param imp: 4D stack ImagePlus
+			 * @param zframes: number of z slices
+			 * @param tframes: number of time points.
+			 * @return
+			 */
+			public ImagePlus createZprojTimeSeries(ImagePlus imp, int zframes, int tframes){
+				Duplicator dpc = new Duplicator();
+				ImagePlus dImp = dpc.run(imp);
+				ImagePlus[] imps = ChannelSplitter.split(dImp);
+				GroupedZProjector gzp = new GroupedZProjector();
+				for (ImagePlus i : imps) {
+					ImagePlus n = gzp.groupZProject(i, 1, i.getNSlices());
+					n.show();
+				}
+/*gzp = GroupedZProjector()
+for i in imps:
+	n = gzp.groupZProject(i, 1, i.getNSlices())
+	n.show()*/
+				
+				
+				ImageStack zprostack = new ImageStack();
+				zprostack = imp.createEmptyStack();
+				ZProjector zpimp = new ZProjector(imp);
+				zpimp.setMethod(1); //1 is max intensity projection	
+				for (int i=0; i<tframes;i++){
+					zpimp.setStartSlice(i*zframes+1);
+					zpimp.setStopSlice((i+1)*zframes);
+					zpimp.doProjection();
+					zprostack.addSlice("t="+Integer.toString(i+1), zpimp.getProjection().getProcessor());
+				}
+				ImagePlus projimp = new ImagePlus("proj" + imp.getTitle(), zprostack);
+				//projimp.setStack(zprostack);
+				return projimp;				
+			}
 	   
 }
