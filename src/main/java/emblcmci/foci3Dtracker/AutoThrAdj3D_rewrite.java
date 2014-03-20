@@ -4,14 +4,14 @@ package emblcmci.foci3Dtracker;
  *
  */
 
+// Java imports
 import java.awt.Color;
-import java.awt.Rectangle;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Vector;
 
+// ImageJ imports
 import ij.plugin.Duplicator;
-import ij.plugin.RGBStackMerge;
+//import ij.plugin.RGBStackMerge;
 import ij.plugin.StackCombiner;
 import ij.plugin.ZProjector;
 import ij.plugin.GroupedZProjector;
@@ -23,9 +23,10 @@ import ij.gui.Line;
 import ij.gui.Roi;
 import ij.measure.Calibration;
 import ij.measure.ResultsTable;
-import ij.plugin.*;
+//import ij.plugin.*;
 import ij.process.ImageProcessor;
 import ij.process.StackConverter;
+import emblcmci.foci3Dtracker.DotLinker; // outsourced the dot linking methods into new class for more modularity
 
 public class AutoThrAdj3D_rewrite {
 
@@ -129,9 +130,13 @@ public class AutoThrAdj3D_rewrite {
 		//3D object measurement part
 		int ch0objnum = 0; 
 		int ch1objnum = 0; 
-		ch0objnum = measureDots(binimp0, "Ch0", obj4Dch0);
-		ch1objnum = measureDots(binimp1, "Ch1", obj4Dch1);		
-		this.linkedArray = dotLinker(obj4Dch0,  obj4Dch1, imp0.getNFrames());
+		ch0objnum = measureDots(binimp0, "Ch0", obj4Dch0); //measureDots writes
+		ch1objnum = measureDots(binimp1, "Ch1", obj4Dch1);
+		
+		DotLinker linker = new DotLinker(obj4Dch0,  obj4Dch1, imp0.getNFrames());
+		
+		this.linkedArray = linker.linkDots();
+		//this.linkedArray = dotLinker(obj4Dch0,  obj4Dch1, imp0.getNFrames());
 		
 		this.linkedImage = drawlinksGrayscale(this.linkedArray, imp0, imp1);
 		
@@ -288,18 +293,18 @@ public class AutoThrAdj3D_rewrite {
 			if (nSlices ==1) return -1;			
 			int nFrames = imp.getNFrames();  //nFrames: number of timeframes
 		
-			ImagePlus imps = null;
-			Duplicator singletime = new Duplicator();
+			ImagePlus frameStack = null;
+			Duplicator dup = new Duplicator();
 			
-			thr = 128; // TODO: where does this number come from?
+			thr = 128; // TODO: where does this number come from? 1/2 8 bit??
 			minSize = minspotvoxels_measure;
 			maxSize = 1000;  // TODO: where does this number come from?
 			excludeOnEdges = false;
 			redirect = false;
 			
 			for (int j=0; j<nFrames; j++){
-				imps = singletime.run(imp, j*nSlices+1, j*nSlices+nSlices); 
-				Counter3D OC = new Counter3D(imps, thr, minSize, maxSize, excludeOnEdges, redirect);
+				frameStack = dup.run(imp, j*nSlices+1, j*nSlices+nSlices); 
+				Counter3D OC = new Counter3D(frameStack, thr, minSize, maxSize, excludeOnEdges, redirect);
 				newRT = true;
 				Vector<Object3D> obj = OC.getObjectsList();
 				int nobj = obj.size();
@@ -314,6 +319,8 @@ public class AutoThrAdj3D_rewrite {
 			return obj4dv.size();
 	}
 	   
+	
+	// --- D O T L I N K E R ---
 	/** Link objects in two channels<br>
 	* <br>
 	* assumes that <b>there is only one or two pairs</b>.<br>
