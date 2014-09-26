@@ -14,7 +14,7 @@
 
 	<groupId>embl.cmci</groupId>
 	<artifactId>Foci3D_tracker</artifactId>
-	<version>1.0.0</version>
+	<version>1.1.0</version>
 
 	<name>plugins/Foci3D_tracker.jar</name>
   <description>A Maven project implementing an ImageJ 1.x plugin
