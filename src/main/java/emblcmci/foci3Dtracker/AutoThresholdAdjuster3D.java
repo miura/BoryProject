@@ -160,6 +160,7 @@ public class AutoThresholdAdjuster3D {   // there should be a constructor with r
 		//    ... then start of segmentation and measurements
 		if ((r0 == null) && (r1 == null))				
 			segAndMeasure( imp0, imp1);
+			drawResultImages( linkedArray, imp0, imp1, obj4Dch0, obj4Dch1);
 		else {
 			ImagePlus imp0roi = null;
 			ImagePlus imp1roi = null;
@@ -206,6 +207,7 @@ public class AutoThresholdAdjuster3D {   // there should be a constructor with r
 			}
 						
 			segAndMeasure(imp0roi, imp1roi);
+			drawResultImages( linkedArray, imp0, imp1, obj4Dch0, obj4Dch1);
 		}
 	}
 	
@@ -260,13 +262,21 @@ public class AutoThresholdAdjuster3D {   // there should be a constructor with r
 			showDistances(linkedArray);
 			}
 		
-		drawlinksGrayscale(linkedArray, imp0, imp1);
-		plotDetectedDots(obj4Dch0, imp0, Color.yellow);
-		plotDetectedDots(obj4Dch1, imp1, Color.red);
 		return true; 
 	}
 	
-	
+	// added on 20140926
+	public void drawResultImages(
+			Object4D[][] linkedArray, 
+			ImagePlus imp0, 
+			ImagePlus imp1,
+			Vector<Object4D> obj4Dch0, 
+			Vector<Object4D> obj4Dch1){
+		drawlinksGrayscale(linkedArray, imp0, imp1);
+		plotDetectedDots(obj4Dch0, imp0, Color.yellow);
+		plotDetectedDots(obj4Dch1, imp1, Color.red);
+		
+	}
 	/** Stores particle parameters 
 	 * <ul>
 	 * <li>centroid<li>coordinates<li>moments<li>scores
@@ -675,7 +685,7 @@ public class AutoThresholdAdjuster3D {   // there should be a constructor with r
 	//public Vector<Object4D> getStatistics(){ // would be nicer to have argument int channel here.
 	//	return []
 	//}
-		public Object4D[][] getLinkedArray(){
+	public Object4D[][] getLinkedArray(){
 		return linkedArray;
 	}
 	
