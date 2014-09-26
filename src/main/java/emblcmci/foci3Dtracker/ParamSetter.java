@@ -14,10 +14,10 @@ public class ParamSetter{
 	private String[] segMethods = { "AutoThreshold", "TrainableSegmentation"};
 	private static int segMethod = 0;
 	
-	private static int maxspotvoxels = 300000000;
+	private static int maxspotvoxels = 200; // 200 voxels based on measurement of nice dot in dtTomato channel at 100x objective, 2x2 binning, 80 ms exposure, 33 % intensity on DV; Improved segmentation and lowered computation time significantly! was 3000000;
 	
 	/**Object volume minimum for volume-based segmentation*/
-	private static int minspotvoxels = 3;	
+	private static int minspotvoxels = 20;	// was 3
 	
 	/**object volume minimum for measurement
 	 *  (maybe 7 is too small)*/
@@ -65,7 +65,7 @@ public class ParamSetter{
 		GenericDialog gd = new GenericDialog("Chromosome Dots Measurement");
 		gd.addChoice("Segmentation_Method :", segMethods , segMethods[segMethod]);
 		gd.addNumericField("Segmentation_Min Spot Size  (3Dobject) :", this.getMinspotvoxels(), 0);
-		gd.addNumericField("Measurmeents Min Spot Size  (3Dobject) :", this.getMinspotvoxels_measure(), 0);
+		gd.addNumericField("Measurements Min Spot Size  (3Dobject) :", this.getMinspotvoxels_measure(), 0);
 		gd.addNumericField("Segmentation_Max Spot Size for  (3Dobject) :", this.getMaxspotvoxels(), 0);
 
 		gd.addMessage("------ Adjustment Loop ------");

@@ -1,6 +1,6 @@
 package emblcmci.foci3Dtracker;
 
-/** Segmentation of yeast chromosome Foci 
+/** Segmentation of fission yeast chromosome Foci 
  *	use 3D object counter to adjust threshold level of 3D stack. 
  *	3D object counter must be installed in ImageJ
  *	100614 main functions now in separate classes
@@ -28,19 +28,20 @@ import ij.process.ImageProcessor;
 import ij.process.StackConverter;
 import ij.process.StackProcessor;
 
-public class AutoThresholdAdjuster3D {
-
-	private static boolean createComposite = true;	
+public class AutoThresholdAdjuster3D {   // there should be a constructor with respective MaxSpotVoxels, MinSpotVoxels, MaxLoops?
+	private static boolean createComposite = true;
 	int thr, minSize, maxSize, dotSize, fontSize;
-	boolean excludeOnEdges, showObj, showSurf, showCentro, showCOM, showNb, whiteNb, newRT, showStat, showMaskedImg, closeImg, showSummary, redirect;
-
+	boolean excludeOnEdges, showObj, showSurf, showCentro, showCOM, showNb, whiteNb, newRT, showStat, closeImg, showSummary, redirect;
+	boolean silent = false;
+	boolean showMaskedImg = false;
+	
 	ParamSetter para = new ParamSetter();
 	int maxspotvoxels = para.getMaxspotvoxels();
 	
 	/**Object volume minimum for volume-based segmentation*/
-	int minspotvoxels = para.getMinspotvoxels();	
+	int minspotvoxels = para.getMinspotvoxels();
 	
-	/**object volume minimum for measurement
+	/**object volume minimum for measurement (measurement meaning determination of position!????)
 	 *  (maybe 7 is too small)*/
 	int minspotvoxels_measure = para.getMinspotvoxels_measure();
 	
@@ -73,6 +74,9 @@ public class AutoThresholdAdjuster3D {
 	/** Vector for storing detected dots in channel 1	 */
 	Vector<Object4D> obj4Dch1; 
 	
+	/** Array for linked 4D objects, field variable to store the results of */
+	Object4D[][] linkedArray; 
+	
 	Calibration cal, calkeep;
 	
 	/**Factor to multiply for depth, to correct for xy pixel scale =1
@@ -80,6 +84,20 @@ public class AutoThresholdAdjuster3D {
 	 */
 	double zfactor;
 	
+	
+	public void setParam(ParamSetter p){
+		maxspotvoxels = p.getMaxspotvoxels();
+		minspotvoxels = p.getMinspotvoxels();
+		minspotvoxels_measure = p.getMinspotvoxels_measure();
+		maxloops = p.getMaxloops();
+		thadj_volmin = p.getThadj_volmin();
+		thadj_volmax = p.getThadj_volmax();
+		thadj_nummin = p.getThadj_nummin();
+		thadj_nummax = p.getThadj_nummax();
+		segMethod = p.getSegMethod();
+	}
+
+
 	public void run() {
 		// ** get a list of opened windows. 
 		//copied and modified from image - color merge... (RGBStackMerge.java)
@@ -173,7 +191,9 @@ public class AutoThresholdAdjuster3D {
 			imp0roi = new ImagePlus("croppedCh0", cropstack);
 			imp0roi.setCalibration(cal);
 			imp0roi.setDimensions(imp0.getNChannels(), imp0.getNSlices(), imp0.getNFrames());
-			imp0roi.show();
+			if (silent == false){
+				imp0roi.show();
+			}
 			
 			tempdup = new Duplicator().run(imp1);
 			tempstackproc  = new StackProcessor(tempdup.getStack(),tempdup.getStack().getProcessor(1));
@@ -181,7 +201,9 @@ public class AutoThresholdAdjuster3D {
 			imp1roi = new ImagePlus("croppedCh1", cropstack);
 			imp1roi.setCalibration(cal);
 			imp1roi.setDimensions(imp1.getNChannels(), imp1.getNSlices(), imp1.getNFrames());
-			imp1roi.show();
+			if (silent == false){
+				imp1roi.show();
+			}
 						
 			segAndMeasure(imp0roi, imp1roi);
 		}
@@ -206,53 +228,11 @@ public class AutoThresholdAdjuster3D {
 		if (segMethod == 0) {		
 			binimp0 = segmentaitonByObjectSize(imp0);
 			binimp1 = segmentaitonByObjectSize(imp1);
-		} else {
-		//Trainable Segmentation
-			if (segMethod == 1){
-				DotSegmentByTrained train = new DotSegmentByTrained();
-				train.setFullpathdata(fullpathtoTrainedData0);
-				binimp0 = train.core(imp0);
-				train.setFullpathdata(fullpathtoTrainedData1);
-				binimp1 = train.core(imp1);
-			} else {
-		//3D particle detection
-//				if (segMethod == 2){			
-//					IJ.log("Segmentation using Particle Tracker 3D is not completed Yet");
-//					//particle tracker3D
-//					DotSegmentByParticletracker3D dpt3D = new DotSegmentByParticletracker3D();
-//					IJ.log("--- channel0 ---");
-//					dpt3D.setup("", imp0);
-//					dpt3D.InitiUserDefinedPara();
-//					IJ.log("Radius:" + Double.toString(dpt3D.radius));
-//					IJ.log("Cutoff:" + Double.toString(dpt3D.cutoff));
-//					IJ.log("Percentile:" + Double.toString(dpt3D.percentile));	
-//					//if (!dpt3D.parameterDialog()) return false; //this line must be changed as parameter setter for particle3D
-//					String particles = dpt3D.DetectDots3D(imp0);
-//					storeParticleInfoInObj4D(particles, obj4Dch0, "ch0");
-//					IJ.log(particles);
-//					//for (int i = 0; i < obj4Dch0.size(); i++) IJ.log("frame"+Integer.toString(obj4Dch0.get(i).timepoint) + ":"+ Float.toString(obj4Dch0.get(i).score));
-//					IJ.log("--- channel1 ---");
-//					DotSegmentByParticletracker3D dpt3D2 = new DotSegmentByParticletracker3D();
-//					dpt3D2.setup("", imp1);
-//					dpt3D2.InitiUserDefinedPara();
-//					// at least percentile should be able to be controlled differently from ch1
-//					IJ.log("Radius:" + Double.toString(dpt3D2.radius));
-//					IJ.log("Cutoff:" + Double.toString(dpt3D2.cutoff));
-//					IJ.log("Percentile:" + Double.toString(dpt3D2.percentile));					
-//					particles = dpt3D2.DetectDots3D(imp1);
-//					storeParticleInfoInObj4D(particles, obj4Dch1, "ch1");
-//					IJ.log(particles);
-//					//TODO there should be another process to generates bin stacks for visualization. 
-//					//return false;
-//					binimp0 = null;
-//					binimp1 = null;
-//				} else 
-					return false;	
-			}
 		}
-		//binimp0.show();
-		//binimp1.show();
-
+		else {
+			return false;	
+		}
+		
 		ImagePlus rgbbin=null;
 		/* in case of particle 3D, no binary images are produced so no composite image. */
 		if ((segMethod != 2) && (createComposite)) {
@@ -269,26 +249,24 @@ public class AutoThresholdAdjuster3D {
 		}
 		//3D object measurement part
 		int ch0objnum = 0; 
-		int ch1objnum = 0;
-		if (segMethod != 2) { 
-			ch0objnum = measureDots(binimp0, "Ch0", obj4Dch0, imp0.getNSlices());
-			ch1objnum = measureDots(binimp1, "Ch1", obj4Dch1, imp1.getNSlices());
-		} 
-		showStatistics(obj4Dch0);
-		showStatistics(obj4Dch1);		
-		//analysis 
+		int ch1objnum = 0; 
+		ch0objnum = measureDots(binimp0, "Ch0", obj4Dch0, imp0.getNSlices());
+		ch1objnum = measureDots(binimp1, "Ch1", obj4Dch1, imp1.getNSlices());		
+		linkedArray = dotLinker(obj4Dch0,  obj4Dch1, imp0.getNFrames());
 		
-		Object4D[][] linkedArray = dotLinker(obj4Dch0,  obj4Dch1, imp0.getNFrames());
+		if (silent == false) {
+			showStatistics(obj4Dch0);
+			showStatistics(obj4Dch1);
+			showDistances(linkedArray);
+			}
 		
-		showDistances(linkedArray);
-		 //if (rgbbin != null) drawlinks(linkedArray, rgbbin);
 		drawlinksGrayscale(linkedArray, imp0, imp1);
 		plotDetectedDots(obj4Dch0, imp0, Color.yellow);
 		plotDetectedDots(obj4Dch1, imp1, Color.red);
-		
-		
 		return true; 
 	}
+	
+	
 	/** Stores particle parameters 
 	 * <ul>
 	 * <li>centroid<li>coordinates<li>moments<li>scores
@@ -312,16 +290,13 @@ public class AutoThresholdAdjuster3D {
 			if (lines[i] == null) break;
 			line = lines[i].trim();
 	        frame_number_info = line.split("\\s+");
-	        //for (int j = 0; j < frame_number_info.length; j++) IJ.log(frame_number_info[j]);	        
 	        int framenum = Integer.parseInt(frame_number_info[0]);
 	        if (framenum != currentframe) {
 	        	dotID = 1;
 	        	currentframe = framenum;
 	        }
 	        
-	        
 	        float[] centroid = {0, 0, 0};
-	        //for (int j =0; j < 3; j++) 
 	        centroid[0]= Float.parseFloat(frame_number_info[2]); //xy order is opposite
 	        centroid[1]= Float.parseFloat(frame_number_info[1]);
 	        centroid[2]= Float.parseFloat(frame_number_info[3]);
@@ -337,20 +312,9 @@ public class AutoThresholdAdjuster3D {
 	        dotID++;
 		}
 		sortbyScore(obj4dv);
-        /* go over all lines, count number of particles and save the information as String */
- /*       while (true) {
-            line = r.readLine();		            
-            if (line == null) break;
-            line = line.trim();
-			if (line.startsWith("%"))	line = line.substring(1);
-			line = line.trim();
-			particles_info.addElement(line.split("\\s+"));
-			this.particles_number++;
-        }
-*/	}
+	}
 	
 	void sortbyScore(Vector<Object4D> obj4dv){
-		
 		int currentframe = 0;
 		int counter = 0;
 		Vector<Object4D> obj4dVpertime = new Vector<Object4D>();
@@ -365,7 +329,6 @@ public class AutoThresholdAdjuster3D {
 				Collections.sort(obj4dVpertime,  new ComparerByscore4D(ComparerByscore4D.DESC));
 				for (int j = 0; j < obj4dVpertime.size(); j++){
 					obj4dv.setElementAt(obj4dVpertime.get(j), counter);
-					//IJ.log(Integer.toString(obj4dVpertime.get(j).dotID));
 					counter++;
 				}
 				obj4dVpertime.clear();
@@ -502,7 +465,6 @@ public class AutoThresholdAdjuster3D {
 		}
 		ImagePlus projimp = new ImagePlus("proj" + imp.getTitle(), zprostack);
 		//projimp.setStack(zprostack);
-		
 		return projimp;				
 	}
 	
@@ -520,14 +482,14 @@ public class AutoThresholdAdjuster3D {
 		int nSlices = imp.getImageStackSize();
 		int zframes = imp.getNSlices();
 		int tframes = nSlices/zframes;
-		double minth =0.0;
+		double minth = 0.0;        // initializing minimal threshold
 		int adjth =0;
 		Duplicator dup = new Duplicator();	//this duplication may not be necessary
 		ImagePlus impcopy = null;
 		int maxth = (int) Math.pow(2,imp.getBitDepth());
 		for(int i =0; i<tframes; i++){
 			impcopy = dup.run(imp, (i*zframes+1), (i+1)*zframes);
-			minth = initializeThresholdLevel(impcopy, 25); //second argument is cutoff pixel area in histogram upper part
+			minth = initializeThresholdLevel(impcopy, 25); //second argument is cutoff pixel area in histogram upper part. (make mym dependent?)
 			IJ.log(Integer.toString(i)+": initial threshold set to "+Double.toString(minth));
 			adjth = (int) ThresholdAdjusterBy3Dobj(imp, (int)minth, this.thadj_volmin, this.thadj_volmax, this.thadj_nummin, this.thadj_nummax);
 			IJ.log("... ... Adjusted to "+Integer.toString(adjth));
@@ -565,6 +527,7 @@ public class AutoThresholdAdjuster3D {
 			sumpixels += hist[i--];
 		}
 		return i;
+		// here: if there is no "upper area": no dot present!?
 	}
 	/** Explore different threshold levels to find out an optimum threshold level for segmenting 
 	 * 3D dots.<br><br>
@@ -595,16 +558,16 @@ public class AutoThresholdAdjuster3D {
 //				"minimum_gray_value maximum_gray_value centroid mean_distance_to_surface " +
 //				"std_dev_distance_to_surface median_distance_to_surface centre_of_mass " +
 //				"bounding_box dots_size=5 font_size=10 redirect_to=none");
-		int localthres =0;
+		int localthres = 0;
 		Duplicator dup = new Duplicator();	//this duplication may not be necessary
 		ImagePlus impcopy = dup.run(imp);
 		// check initial condition
 		excludeOnEdges = false;
-		redirect = false; 
+		redirect = false; // this is the option to suppress the showing of masked images??
 		Counter3D OC = new Counter3D(impcopy, initTh, minspotvoxels, (int) maxspotvoxels*2, excludeOnEdges, redirect);
 		Vector<Object3D> obj = OC.getObjectsList();
 		int nobj = obj.size();
-		int volumesum=0; 
+		int volumesum=0;
 		for (int i=0; i<nobj; i++){
 			 Object3D currObj=obj.get(i);
 			 volumesum += currObj.size;
@@ -649,7 +612,7 @@ public class AutoThresholdAdjuster3D {
 		return localthres;
 	}
 	
-	public int measureDots(ImagePlus imp, String chnum, 
+	public int measureDots(ImagePlus imp, String chnum, // 
 			Vector<Object4D> obj4dv, int zframes) {
 		
 		int nSlices = imp.getStackSize();
@@ -668,30 +631,19 @@ public class AutoThresholdAdjuster3D {
 		redirect = false;
 		
 		for (int j=0; j<tframes; j++){
-			//coords.clear();
-			//vols.clear();
-			//IJ.log("====frame "+Integer.toString(j)+" ==========");
 			imps = singletime.run(imp, j*zframes+1, j*zframes+zframes); 
 			Counter3D OC=new Counter3D(imps, thr, minSize, maxSize, excludeOnEdges, redirect);
 			newRT = true;
-			 //OC.showStatistics(newRT);
-			 //if (!Counter3D.getObjects) Counter3DgetObjects();
-
-			 Vector<Object3D> obj = OC.getObjectsList();
-			 int nobj = obj.size();
-			 //IJ.log(Integer.toString(nobj));
-			 //sort obj in size-descending order. 
-			 Collections.sort(obj,  new ComparerBysize3D(ComparerBysize3D.DESC));
-			 for (int i=0; i<nobj; i++){			 
+			Vector<Object3D> obj = OC.getObjectsList();
+			int nobj = obj.size();
+			Collections.sort(obj,  new ComparerBysize3D(ComparerBysize3D.DESC));
+			for (int i=0; i<nobj; i++){			 
 				 Object3D cObj=obj.get(i);
-				 //IJ.log(LogObject3D(cObj, i));
 				 obj4d = new Object4D(cObj.size);
 				 obj4d.CopyObj3Dto4D(cObj, j, chnum, i+1); //adds additional 4d parameters, timepoint, channel & dotID 
 				 obj4dv.add(obj4d);
-			 }
-			 
+			 } 
 		} 
-		
 		return obj4dv.size();
 	}
 
@@ -709,6 +661,25 @@ public class AutoThresholdAdjuster3D {
 		+" : IntDen"+Float.toString(cObj.int_dens);
 		return opt;
 	}
+	
+	
+	// method added by Christoph
+	public void setSilent(boolean z){
+		silent = z;
+	}
+	
+	public void setParameters(){
+		
+	}
+	
+	//public Vector<Object4D> getStatistics(){ // would be nicer to have argument int channel here.
+	//	return []
+	//}
+		public Object4D[][] getLinkedArray(){
+		return linkedArray;
+	}
+	
+	
 	/**
 	 * Show Object4D vector in Results window. 
 	 * 
@@ -732,6 +703,7 @@ public class AutoThresholdAdjuster3D {
 	       
 	        rt.show("Statistics_"+obj4Dv.get(0).chnum);     
 	    }
+	   
 	   public void showDistances(Object4D[][] linked){
 	        ResultsTable rt;        
 	        rt=new ResultsTable();
@@ -767,9 +739,9 @@ public class AutoThresholdAdjuster3D {
 		   double dist = -1.0;
 		   if ((obj1.centroid.length > 1) && (obj2.centroid.length > 1)) {
 			   double sqd = (
-					   Math.pow(obj1.centroid[0] - obj2.centroid[0], 2) 
-					   + Math.pow(obj1.centroid[1] - obj2.centroid[1], 2) 
-					   + Math.pow((obj1.centroid[2] - obj2.centroid[2])*zfactor, 2)
+					   Math.pow(obj1.centroid[0] - obj2.centroid[0], 2.0)    // changed 2 to 2.0
+					   + Math.pow(obj1.centroid[1] - obj2.centroid[1], 2.0) 
+					   + Math.pow((obj1.centroid[2] - obj2.centroid[2])*zfactor, 2.0)
 					);
 			   dist = Math.pow(sqd, 0.5);
 		   }	
@@ -972,137 +944,4 @@ class ComparerByscore4D implements Comparator<Object4D> {
     }
 }
 
-
-
-/*
- * macro "connect dots in different channels"{
-	LinkerCore();	
-}
-
-function LinkerCore(){
-	if (nResults==0) exit("not measured??");
-	for(i=0; i<connectArray.length; i++) connectArray[i] =-1;
-	 DotLinker(tframes);
-	setColor(255, 255, 255);
-	for (i=0; i<tframes; i++){
-		//setSlice(i+1);
-		pstr = "time:" + i  + "\n"
-			+ "   ch0: "	+ connectArray[i*14 ]
-				+", "	+ connectArray[i*14 +1] 
- 				+", "	+ connectArray[i*14 +2]
-			+ "\n   ch1: "	+ connectArray[i*14 +3]
-				+", "	+ connectArray[i*14 +3 +1] 
- 				+", "	+ connectArray[i*14 +3 +2];
-		//drawLine(connectArray[i*14], connectArray[i*14+1], connectArray[i*14+3], connectArray[i*14+4]);
-		if (connectArray[i*14 +7] !=-1) {
-			pstr = pstr + "\n   ch0: "+   connectArray[i*14 +7]
-				+", "+   connectArray[i*14 +7+1]
-				+", "+   connectArray[i*14 +7+2]
-				+ "\n   ch1: "+   connectArray[i*14 +7+3]
-				+", "+   connectArray[i*14 +7+3+1]
-				+", "+   connectArray[i*14 +7+3+2];
-				//drawLine(connectArray[i*14+7], connectArray[i*14+7+1], connectArray[i*14+7+3], connectArray[i*14+7+4]);
-
-		}
-		print(pstr);
- 
-	}
-}
-
-function DotLinker(tframes){
-	for (i=0; i<tframes; i++) {
-		ch0dots = returnDotNumber(0, i);
-		ch1dots = returnDotNumber(1, i);
-		//print(i +":  Ch0 dots:", ch0dots, "- Ch1 dots:", ch1dots);
-		
-		if ((ch0dots != 0) && (ch1dots != 0)) {
-
-			if ((ch0dots == 1) && (ch1dots == 1)) {
-				StoreCoordinates(connectArray, i, 0, 0, 0);
-				StoreCoordinates(connectArray, i, 1, 0, 0);
-			} else {
-				if ((ch0dots >= 2) && (ch1dots >= 2)) {
-					flag = compare2x2(i);
-					if (flag ==1) {
-						StoreCoordinates(connectArray, i, 0, 0, 0);
-						StoreCoordinates(connectArray, i, 1, 0, 0);
-						StoreCoordinates(connectArray, i, 0, 1, 1);
-						StoreCoordinates(connectArray, i, 1, 1, 1);
-					} else {
-						StoreCoordinates(connectArray, i, 0, 0, 0);
-						StoreCoordinates(connectArray, i, 1, 0, 1);
-						StoreCoordinates(connectArray, i, 0, 1, 1);
-						StoreCoordinates(connectArray, i, 1, 1, 0);
-					}
-				} else {		//either one of them is only one. 
-					flag = compare2x1(i);
-					if (flag ==1) {
-						StoreCoordinates(connectArray, i, 0, 0, 0);
-						StoreCoordinates(connectArray, i, 1, 0, 0);
-					} else {
-						if (flag ==2) {
-							StoreCoordinates(connectArray, i, 0, 0, 0);
-							StoreCoordinates(connectArray, i, 1, 1, 0);
-						} else {
-							StoreCoordinates(connectArray, i, 0, 1, 0);
-							StoreCoordinates(connectArray, i, 1, 0, 0);
-						}
-					}
-				}
-			}
-		}
-
-	}
-}
-
-function StoreCoordinates(sA, timepoints, chrchannel, dotID, offset){
-	key = timepoints * 14;
-	index =  returnDotIndex(chrchannel, timepoints, dotID);
-	sA[key+ offset*7 +chrchannel*3 ] =  getResult("x", index);
-	sA[key+ offset*7+chrchannel*3+1] =  getResult("y", index);
-	sA[key+ offset*7+chrchannel*3+2] =  getResult("z", index);
-}
-
-function compare2x2(timepoint){
-	ch0id0 = returnDotIndex(0, timepoint, 0);
-	ch0id1 = returnDotIndex(0, timepoint, 1);
-	ch1id0 = returnDotIndex(1, timepoint, 0);
-	ch1id1 = returnDotIndex(1, timepoint, 1);
-	combi01 = returnDistance(ch0id0,  ch1id0) + returnDistance(ch0id1,  ch1id1);
-	combi02 = returnDistance(ch0id0,  ch1id1) + returnDistance(ch0id1,  ch1id0);
-	flag =0;
-	if (combi01 < combi02 ) flag =1;
-	else flag =2;
-	return flag;
-}
-
-function compare2x1(timepoint){
-	ch0dots = returnDotNumber(0, timepoint);
-	ch1dots = returnDotNumber(1, timepoint);
-	ch0id0 = returnDotIndex(0, timepoint, 0);
-	ch1id0 = returnDotIndex(1, timepoint, 0);
-	flag =0;
-	if (ch0dots ==1) {
-		ch1id1 = returnDotIndex(1, timepoint, 1);
-		combi01 = returnDistance(ch0id0,  ch1id0) ;
-		combi02 = returnDistance(ch0id0,  ch1id1) ;
-		if (combi01<combi02) flag= 1;
-		else flag = 2;
-	} else {
-		ch0id1 = returnDotIndex(0, timepoint, 1);
-		combi01 = returnDistance(ch0id0,  ch1id0) ;
-		combi02 = returnDistance(ch0id1,  ch1id0) ;
-		if (combi01<combi02) flag= 1;
-		else flag = 3;
-	}
-	return flag;
-}
-*/
-
-/*
- * 
- * 
- * 
- * 
- */
 
