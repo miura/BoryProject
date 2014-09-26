@@ -158,10 +158,11 @@ public class AutoThresholdAdjuster3D {   // there should be a constructor with r
 		// ** works both with and without ROI. 
 		//    in case of ROI selected, that portion is cropped. 
 		//    ... then start of segmentation and measurements
-		if ((r0 == null) && (r1 == null))				
+		if ((r0 == null) && (r1 == null)){				
 			segAndMeasure( imp0, imp1);
 			drawResultImages( linkedArray, imp0, imp1, obj4Dch0, obj4Dch1);
-		else {
+
+		} else {
 			ImagePlus imp0roi = null;
 			ImagePlus imp1roi = null;
 			IJ.log("... ROI found ... ");			
