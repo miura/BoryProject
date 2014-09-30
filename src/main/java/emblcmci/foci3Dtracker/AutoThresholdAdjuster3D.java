@@ -303,21 +303,6 @@ public class AutoThresholdAdjuster3D {   // there should be a constructor with r
 		return projimp;				
 	}
 
-
-	String LogObject3D(Object3D cObj, int i){
-		String opt ="";
-		String Cent ="";
-		Cent = "("
-			+Float.toString(cObj.centroid[0])+","
-			+Float.toString(cObj.centroid[1])+","
-			+Float.toString(cObj.centroid[2])
-			+")";
-		opt = "Object"+Integer.toString(i)
-		+" vol="+Integer.toString(cObj.size) 
-		+ "\t "+Cent
-		+" : IntDen"+Float.toString(cObj.int_dens);
-		return opt;
-	}
 	
 	
 	// method added by Christoph

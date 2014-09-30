@@ -13,6 +13,8 @@ import ij.process.StackConverter;
 import java.awt.Color;
 import java.util.Vector;
 
+import Utilities.Object3D;
+
 /**Methods for graphical output 
  *   moved from main classes
  * */
@@ -180,6 +182,23 @@ public class GUIoutputs {
 				 }
 			 }
 		 }
+	}
+
+
+
+	String LogObject3D(Object3D cObj, int i){
+		String opt ="";
+		String Cent ="";
+		Cent = "("
+			+Float.toString(cObj.centroid[0])+","
+			+Float.toString(cObj.centroid[1])+","
+			+Float.toString(cObj.centroid[2])
+			+")";
+		opt = "Object"+Integer.toString(i)
+		+" vol="+Integer.toString(cObj.size) 
+		+ "\t "+Cent
+		+" : IntDen"+Float.toString(cObj.int_dens);
+		return opt;
 	}
 	
 // Form here, old guys, maybe delete. 
