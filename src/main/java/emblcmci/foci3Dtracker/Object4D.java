@@ -1,4 +1,7 @@
 package emblcmci.foci3Dtracker;
+import java.util.Collections;
+import java.util.Vector;
+
 /*
  * @author Kota Miura
  * @author CMCI, EMBL
@@ -106,6 +109,75 @@ public class Object4D extends Object3D{
 	
 	public int getTimepoint(){
 		return this.timepoint;
+	}
+	
+	/** Stores particle parameters 
+	 * <ul>
+	 * <li>centroid<li>coordinates<li>moments<li>scores
+	 * </ul>
+	 * output from particle3D plugin (type of String) are stored in Object4D array.
+	 * <br>Object4D is an extended class of Object3D with time point fields and methods.  
+	 * 
+	 * @param particles: String variable exported from particle3D plugin
+	 * @param obj4dv Vector<Object4D> to store all detected particles
+	 * @param chnum String indicating the name of channel
+	 */
+	public void storeParticleInfoInObj4D(String particles, Vector<Object4D> obj4dv, String chnum){
+		String[] lines;
+		String line;
+		String[] frame_number_info;
+		lines = particles.split("\n");
+		int currentframe = 0;
+		int dotID = 1;
+		int dummysize = 1;
+		for (int i = 0; i < lines.length; i++){
+			if (lines[i] == null) break;
+			line = lines[i].trim();
+	        frame_number_info = line.split("\\s+");
+	        int framenum = Integer.parseInt(frame_number_info[0]);
+	        if (framenum != currentframe) {
+	        	dotID = 1;
+	        	currentframe = framenum;
+	        }
+	        
+	        float[] centroid = {0, 0, 0};
+	        centroid[0]= Float.parseFloat(frame_number_info[2]); //xy order is opposite
+	        centroid[1]= Float.parseFloat(frame_number_info[1]);
+	        centroid[2]= Float.parseFloat(frame_number_info[3]);
+	        float m0 = Float.parseFloat(frame_number_info[4]);
+	        float m1 = Float.parseFloat(frame_number_info[5]);
+	        float m2 = Float.parseFloat(frame_number_info[6]);
+	        float m3 = Float.parseFloat(frame_number_info[7]);
+	        float m4 = Float.parseFloat(frame_number_info[8]);
+	        float score = Float.parseFloat(frame_number_info[9]);
+	        	        
+	        Object4D obj4d = new Object4D(dummysize, framenum, chnum, dotID, centroid, m0, m1, m2, m3, m4, score);
+	        obj4dv.add(obj4d);
+	        dotID++;
+		}
+		sortbyScore(obj4dv);
+	}
+	
+	void sortbyScore(Vector<Object4D> obj4dv){
+		int currentframe = 0;
+		int counter = 0;
+		Vector<Object4D> obj4dVpertime = new Vector<Object4D>();
+		for (int i = 0; i < obj4dv.size(); i++){
+			if ((i == 0) || (obj4dv.get(i).timepoint != currentframe)){
+				currentframe = obj4dv.get(i).timepoint;
+				for (int j = 0; j < obj4dv.size(); j++){
+					if (obj4dv.get(j).timepoint == currentframe) {
+						obj4dVpertime.add(obj4dv.get(j));
+					}
+				}
+				Collections.sort(obj4dVpertime,  new ComparerByscore4D(ComparerByscore4D.DESC));
+				for (int j = 0; j < obj4dVpertime.size(); j++){
+					obj4dv.setElementAt(obj4dVpertime.get(j), counter);
+					counter++;
+				}
+				obj4dVpertime.clear();
+			}
+		}	
 	}
 	
 }
