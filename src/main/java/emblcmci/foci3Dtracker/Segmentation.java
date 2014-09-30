@@ -5,9 +5,10 @@ import java.util.Vector;
 
 public abstract class Segmentation {
 
-	abstract Segmentation setComponents(ImagePlus imp0, ImagePlus imp1, Vector<Object4D> obj4Dch0, Vector<Object4D> obj4Dch1);
+	public ImagePlus binimp0;
+	public ImagePlus binimp1;
 	
-	abstract void setParameters();
+	abstract Segmentation setComponents(ImagePlus imp0, ImagePlus imp1, Vector<Object4D> obj4Dch0, Vector<Object4D> obj4Dch1);
 
 	abstract public Object4D[][] doSegmentation();
 }

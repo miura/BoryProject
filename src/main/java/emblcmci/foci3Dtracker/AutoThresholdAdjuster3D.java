@@ -37,6 +37,9 @@ public class AutoThresholdAdjuster3D {   // there should be a constructor with r
 	boolean showMaskedImg = false;
 	
 	ParamSetter para = new ParamSetter();
+	int maxXYPixels = 25; // maximal area in px of the dot on z-projection,
+	// default 25 px
+	
 	int maxspotvoxels = para.getMaxspotvoxels();
 	
 	/**Object volume minimum for volume-based segmentation*/
@@ -69,11 +72,11 @@ public class AutoThresholdAdjuster3D {   // there should be a constructor with r
 	 * */
 	Object4D obj4d;	//Object3D added with time point and channel number fields. 
 	
-	/** Vector for storing detected dots in channel 0	 */
-	Vector<Object4D> obj4Dch0; 
+	/** Vector for storing detected dots in channel 0 */
+	Vector<Object4D> obj4Dch0 = new Vector<Object4D>();
 
-	/** Vector for storing detected dots in channel 1	 */
-	Vector<Object4D> obj4Dch1; 
+	/** Vector for storing detected dots in channel 1 */
+	Vector<Object4D> obj4Dch1 = new Vector<Object4D>();
 	
 	/** Array for linked 4D objects, field variable to store the results of */
 	Object4D[][] linkedArray; 
@@ -228,13 +231,18 @@ public class AutoThresholdAdjuster3D {   // there should be a constructor with r
 	 * @return
 	 */
 	public boolean segAndMeasure(ImagePlus imp0, ImagePlus imp1){
-		ImagePlus binimp0, binimp1;
-		obj4Dch0 = new Vector<Object4D>();
-		obj4Dch1 = new Vector<Object4D>();
+
+		Segmentation seg;
 		//auto adjusted threshold segmentation
 		if (segMethod == 0) {		
-			binimp0 = segmentaitonByObjectSize(imp0);
-			binimp1 = segmentaitonByObjectSize(imp1);
+			//binimp0 = segmentaitonByObjectSize(imp0);
+			//binimp1 = segmentaitonByObjectSize(imp1);
+			seg = new SegmentatonByThresholdAdjust();
+			seg.setComponents(imp0, imp1, this.obj4Dch0, this.obj4Dch1);
+			((SegmentatonByThresholdAdjust) seg).setThresholdAdjParameters(
+					maxXYPixels, maxspotvoxels, minspotvoxels,
+					minspotvoxels_measure, maxloops, thadj_volmin, thadj_volmax,
+					thadj_nummin, thadj_nummax);			
 		}
 		else {
 			return false;	
@@ -242,11 +250,12 @@ public class AutoThresholdAdjuster3D {   // there should be a constructor with r
 		
 		ImagePlus rgbbin=null;
 		/* in case of particle 3D, no binary images are produced so no composite image. */
+		/* temporarily out, 20140930
 		if ((segMethod != 2) && (createComposite)) {
 			ImagePlus ch0proj=null;
-			ImagePlus ch1proj=null;
-			ch0proj = createZprojTimeSeries(binimp0, imp0.getNSlices(), imp0.getNFrames());
-			ch1proj = createZprojTimeSeries(binimp1, imp1.getNSlices(), imp1.getNFrames());
+			ImagePlus ch1proj=null;		
+			ch0proj = createZprojTimeSeries(seg.binimp0, imp0.getNSlices(), imp0.getNFrames());
+			ch1proj = createZprojTimeSeries(seg.binimp1, imp1.getNSlices(), imp1.getNFrames());
 			ImageStack dummy = null;
 			RGBStackMerge rgbm = new RGBStackMerge();
 			ImageStack rgbstack = rgbm.mergeStacks(ch0proj.getWidth(), ch0proj.getHeight(), ch0proj.getStackSize(), ch0proj.getStack(), ch1proj.getStack(), dummy, true);
@@ -254,12 +263,10 @@ public class AutoThresholdAdjuster3D {   // there should be a constructor with r
 			rgbbin.show();
 			
 		}
-		//3D object measurement part
-		int ch0objnum = 0; 
-		int ch1objnum = 0; 
-		ch0objnum = measureDots(binimp0, "Ch0", obj4Dch0, imp0.getNSlices());
-		ch1objnum = measureDots(binimp1, "Ch1", obj4Dch1, imp1.getNSlices());		
+		*/
+	
 		linkedArray = dotLinker(obj4Dch0,  obj4Dch1, imp0.getNFrames());
+		this.linkedArray = seg.doSegmentation();
 		
 		if (silent == false) {
 			GUIoutputs out = new GUIoutputs();
@@ -356,25 +363,6 @@ public class AutoThresholdAdjuster3D {   // there should be a constructor with r
 			 }
 		 }
 	}
-	/** not used anymore
-	 * 
-	 * @param linked
-	 * @param imp
-	 */
-	public void drawlinks(Object4D[][] linked, ImagePlus imp){
-		IJ.run("Colors...", "foreground=white background=white selection=yellow");
-		for(int i = 0;  i < linked.length; i++) {
-			for(int j = 0;  j < linked[0].length; j += 2) {
-				if (linked[i][j] != null){
-					imp.setSlice(linked[i][j].timepoint + 1);
-					imp.setRoi(new Line(linked[i][j].centroid[0], linked[i][j].centroid[1], linked[i][j+1].centroid[0], linked[i][j+1].centroid[1]));
-				}	IJ.run(imp, "Draw", "slice");
-			}
-		}
-		imp.updateAndDraw();
-	}
-
-
 
 	/** Z projection of 4D stack, each time point projected to 2D.<br> 
 	 *this might not be usefule these days as native z-projection supports 4D. 
@@ -398,188 +386,7 @@ public class AutoThresholdAdjuster3D {   // there should be a constructor with r
 		//projimp.setStack(zprostack);
 		return projimp;				
 	}
-	
-	/** Segmentation of Dots using automatic threshold level coupled with 3D Object Counter
-	 * processes 3D stack from each time point separately.<br>
-	 *   
-	 * @param imp: gray scale 4D stack
-	 * @return ImagePlus: duplicated and then processed ImagePlus (binary image)
-	 * 
-	 */
-	public ImagePlus segmentaitonByObjectSize(ImagePlus imp){
 
-		Duplicator bin = new Duplicator();	//this duplication may not be necessary
-		ImagePlus binimp = bin.run(imp);		
-		int nSlices = imp.getImageStackSize();
-		int zframes = imp.getNSlices();
-		int tframes = nSlices/zframes;
-		double minth = 0.0;        // initializing minimal threshold
-		int adjth =0;
-		Duplicator dup = new Duplicator();	//this duplication may not be necessary
-		ImagePlus impcopy = null;
-		int maxth = (int) Math.pow(2,imp.getBitDepth());
-		for(int i =0; i<tframes; i++){
-			impcopy = dup.run(imp, (i*zframes+1), (i+1)*zframes);
-			minth = initializeThresholdLevel(impcopy, 25); //second argument is cutoff pixel area in histogram upper part. (make mym dependent?)
-			IJ.log(Integer.toString(i)+": initial threshold set to "+Double.toString(minth));
-			adjth = (int) ThresholdAdjusterBy3Dobj(imp, (int)minth, this.thadj_volmin, this.thadj_volmax, this.thadj_nummin, this.thadj_nummax);
-			IJ.log("... ... Adjusted to "+Integer.toString(adjth));
-			
-			for (int j=0; j<zframes; j++)
-				binimp.getStack().getProcessor(i*zframes+1+j).threshold(adjth);
-		}	
-		return binimp;
-	}
-	
-	/**Initializes the threshold value of 3D stack with dark background 
-	 * <ul>
-	 * <li>1. z-projection by maximum intensity
-	 * <li>2. get histogram of z-projection
-	 * <li>3. then find a pixel value that the upper area of histogram becomes larger than setting value
-	 * </ul>
-	 * <br>tried using Shanbhag autothreshold but later suppressed. 
-	 * <br> 
-	 * @param imp	grayscale 3D stack
-	 * @param cutoff_upperArea pixel area of upper part of histogram 
-	 * @return
-	 */
-	public int initializeThresholdLevel(ImagePlus imp, int cutoff_upperArea){
-		ZProjector zpimp = new ZProjector(imp);
-		zpimp.setMethod(1); //1 is max intensity projection
-		zpimp.doProjection();
-			//zpimp.getProjection().show();
-			//IJ.setAutoThreshold(zpimp.getProjection(), "Shanbhag dark");
-			//IJ.setAutoThreshold(zpimp.getProjection(), "Minimum dark");
-			//double minth = zpimp.getProjection().getProcessor().getMinThreshold();
-		int[] hist = zpimp.getProjection().getProcessor().getHistogram();	//simpler strategy
-		int sumpixels =0;
-		int i = hist.length-1;
-		while (sumpixels < cutoff_upperArea){
-			sumpixels += hist[i--];
-		}
-		return i;
-		// here: if there is no "upper area": no dot present!?
-	}
-	/** Explore different threshold levels to find out an optimum threshold level for segmenting 
-	 * 3D dots.<br><br>
-	 * <b>updates</b>
-	 * <ul>
-	 * <li>20101117 added a line to suppress error messages from Counter3D
-	 * when no 3D objects were found. 
-	 * </ul>
-	 * 
-	 * @param imp	gray scale 3D stack
-	 * @param initTh	initial level of threshold to start with exploration
-	 * @param thadj_volmin
-	 * @param thadj_volmax
-	 * @param thadj_nummin
-	 * @param thadj_nummax
-	 * @return optimized threshold level for segmentation of 3D dots. 
-	 */
-	public double ThresholdAdjusterBy3Dobj(ImagePlus imp, 
-			int initTh, 
-			int thadj_volmin, 
-			int thadj_volmax, 
-			int thadj_nummin,
-			int thadj_nummax){
-		// somehow this part causes error in osx
-		//TODO implement initial setting more directly
-//		IJ.run("3D OC Options", "volume surface nb_of_obj._voxels nb_of_surf._voxels " +
-//				"integrated_density mean_gray_value std_dev_gray_value median_gray_value " +
-//				"minimum_gray_value maximum_gray_value centroid mean_distance_to_surface " +
-//				"std_dev_distance_to_surface median_distance_to_surface centre_of_mass " +
-//				"bounding_box dots_size=5 font_size=10 redirect_to=none");
-		int localthres = 0;
-		Duplicator dup = new Duplicator();	//this duplication may not be necessary
-		ImagePlus impcopy = dup.run(imp);
-		// check initial condition
-		excludeOnEdges = false;
-		redirect = false; // this is the option to suppress the showing of masked images??
-		Prefs.set("3D-OC-Options_showMaskedImg.boolean",false); // answer for Christoph: this line.
-		
-		Counter3D OC = new Counter3D(impcopy, initTh, minspotvoxels, (int) maxspotvoxels*2, excludeOnEdges, redirect);
-		Vector<Object3D> obj = OC.getObjectsList();
-		int nobj = obj.size();
-		int volumesum=0;
-		for (int i=0; i<nobj; i++){
-			 Object3D currObj=obj.get(i);
-			 volumesum += currObj.size;
-		}
-		IJ.log("Threshold Adjuster initial th: "+ Integer.toString(initTh) +" ObjNum: "+Integer.toString(nobj)+"Volume Sum: "+Integer.toString(volumesum));
-		localthres = initTh;
-		int loopcount =0;
-//		while ( (((nobj != 2) && (nobj !=4))|| ((volumesum > maxspotvoxels*nobj) 
-//				|| (volumesum < minspotvoxels*nobj))) && (loopcount>maxloops)) {
-		while ( 
-				(nobj < thadj_nummin || nobj > thadj_nummax || volumesum > thadj_volmax || volumesum <thadj_volmin) 
-				&& 
-				(loopcount<maxloops)
-				) {
-
-			if ((nobj<thadj_nummin) && (volumesum < thadj_volmin)) localthres--;
-			if ((nobj<thadj_nummin) && (volumesum > thadj_volmax)) localthres++;			
-			if ((nobj>thadj_nummax) && (volumesum > thadj_volmax)) localthres--;
-			if ((nobj>thadj_nummax) && (volumesum < thadj_volmin)) localthres++;
-			if ((nobj >= thadj_nummin) && (nobj <= thadj_nummax)){
-				if (volumesum < thadj_volmin) localthres--;
-				else localthres++;
-			}
-			// this part is a bit not clear
-			if ((volumesum >= thadj_volmin) && (volumesum <= thadj_volmax)){
-				if (nobj < thadj_nummin) localthres++;
-				else localthres--;
-			}			
-			IJ.redirectErrorMessages(true);	//20101117
-			OC = new Counter3D(impcopy, localthres, minspotvoxels, (int) (maxspotvoxels*1.5), excludeOnEdges, redirect);
-			obj = OC.getObjectsList();
-			nobj = obj.size();
-			volumesum=0;
-			for (int i=0; i<nobj; i++){
-				 Object3D currObj=obj.get(i);
-				 volumesum += currObj.size;
-			}
-			loopcount++;
-		}
-		if (loopcount>0) IJ.log("... New Th="+ Integer.toString(localthres)+" Iter="+Integer.toString(loopcount)+ " ObjNo:"+Integer.toString(nobj)+"Volume Sum:"+Integer.toString(volumesum));
-		
-		return localthres;
-	}
-	
-	public int measureDots(ImagePlus imp, String chnum, // 
-			Vector<Object4D> obj4dv, int zframes) {
-		
-		int nSlices = imp.getStackSize();
-		if (nSlices ==1) return -1;
-		//int zframes =8; // TODO
-		int tframes = nSlices/zframes;
-	
-		//IJ.log(Integer.toString(imp.getHeight()));
-		ImagePlus imps = null;
-		Duplicator singletime = new Duplicator();
-		
-		thr = 128;
-		minSize = minspotvoxels_measure;
-		maxSize = 1000;
-		excludeOnEdges = false;
-		redirect = false;
-		Prefs.set("3D-OC-Options_showMaskedImg.boolean", false);
-		
-		for (int j=0; j<tframes; j++){
-			imps = singletime.run(imp, j*zframes+1, j*zframes+zframes); 
-			Counter3D OC=new Counter3D(imps, thr, minSize, maxSize, excludeOnEdges, redirect);
-			newRT = true;
-			Vector<Object3D> obj = OC.getObjectsList();
-			int nobj = obj.size();
-			Collections.sort(obj,  new ComparerBysize3D(ComparerBysize3D.DESC));
-			for (int i=0; i<nobj; i++){			 
-				 Object3D cObj=obj.get(i);
-				 obj4d = new Object4D(cObj.size);
-				 obj4d.CopyObj3Dto4D(cObj, j, chnum, i+1); //adds additional 4d parameters, timepoint, channel & dotID 
-				 obj4dv.add(obj4d);
-			 } 
-		} 
-		return obj4dv.size();
-	}
 
 	String LogObject3D(Object3D cObj, int i){
 		String opt ="";

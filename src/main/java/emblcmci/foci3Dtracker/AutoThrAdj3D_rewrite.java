@@ -8,7 +8,6 @@ package emblcmci.foci3Dtracker;
 import java.util.Vector;
 
 // ImageJ imports
-//import ij.plugin.RGBStackMerge;
 import ij.*;
 import ij.measure.Calibration;
 
@@ -127,8 +126,6 @@ public class AutoThrAdj3D_rewrite {
 				maxXYPixels, maxspotvoxels, minspotvoxels,
 				minspotvoxels_measure, maxloops, thadj_volmin, thadj_volmax,
 				thadj_nummin, thadj_nummax);
-		// this.linkedArray = segmentationByThrehsoldAdjust(imp0, imp1,
-		// this.obj4Dch0, this.obj4Dch1);
 		this.linkedArray = seg.doSegmentation();
 		GUIoutputs out = new GUIoutputs();
 		this.linkedImage = out.drawlinksGrayscale(this.linkedArray, imp0, imp1);

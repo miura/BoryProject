@@ -12,6 +12,14 @@ import ij.Prefs;
 import ij.plugin.Duplicator;
 import ij.plugin.ZProjector;
 
+/**
+ * Implementation of Dot Segmentation for Bory / Christoph's project
+ * Moved from main class on 20140930
+ *
+ * @author miura
+ *
+ */
+
 public class SegmentatonByThresholdAdjust extends Segmentation {
 	ImagePlus imp0;
 	ImagePlus imp1;
@@ -67,16 +75,15 @@ public class SegmentatonByThresholdAdjust extends Segmentation {
 		}
 		
 	public Object4D[][] doSegmentation(){
-		ImagePlus binimp0, binimp1;
 		//auto adjusted threshold segmentation	
-		binimp0 = segmentaitonByObjectSize(this.imp0);
-		binimp1 = segmentaitonByObjectSize(this.imp1);
+		this.binimp0 = segmentaitonByObjectSize(this.imp0);
+		this.binimp1 = segmentaitonByObjectSize(this.imp1);
 
 		//ImagePlus rgbbin = null;
 
 		//3D object measurement part
-		int ch0objnum = measureDots(binimp0, "Ch0", this.obj4Dch0); //measureDots writes
-		int ch1objnum = measureDots(binimp1, "Ch1", this.obj4Dch1);
+		int ch0objnum = measureDots(this.binimp0, "Ch0", this.obj4Dch0); //measureDots writes
+		int ch1objnum = measureDots(this.binimp1, "Ch1", this.obj4Dch1);
 
 		DotLinker linker = new DotLinker(this.obj4Dch0,  this.obj4Dch1, this.imp0.getNFrames());
 
@@ -224,12 +231,6 @@ public class SegmentatonByThresholdAdjust extends Segmentation {
 		if (loopcount>0) IJ.log("... New Th="+ Integer.toString(localthres)+" Iter="+Integer.toString(loopcount)+ " ObjNo:"+Integer.toString(nobj)+"Volume Sum:"+Integer.toString(volumesum));
 
 		return localthres;
-	}
-	
-	@Override
-	void setParameters() {
-		// TODO Auto-generated method stub
-		
 	}
 	
 }
