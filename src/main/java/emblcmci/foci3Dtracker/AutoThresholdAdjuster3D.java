@@ -265,7 +265,7 @@ public class AutoThresholdAdjuster3D {   // there should be a constructor with r
 		}
 		*/
 	
-		linkedArray = dotLinker(obj4Dch0,  obj4Dch1, imp0.getNFrames());
+		//linkedArray = dotLinker(obj4Dch0,  obj4Dch1, imp0.getNFrames());
 		this.linkedArray = seg.doSegmentation();
 		
 		if (silent == false) {
@@ -320,125 +320,7 @@ public class AutoThresholdAdjuster3D {   // there should be a constructor with r
 	public Object4D[][] getLinkedArray(){
 		return linkedArray;
 	}
-	
 
-	   // returns number of dots at single time point
-	   int returnDotNumber(Vector<Object4D> obj4D, int timepoint){
-		   int counter =0;
-		   for (int i=0; i<obj4D.size(); i++){
-			   if (obj4D.get(i).timepoint == timepoint) counter++;
-		   }
-		   return counter;
-	   }
-	   // dotID could only be 1 or 2 (0 does not exist)
-	   Object4D returnObj4D(Vector<Object4D> obj4Dv, int tpoint, int dotID){
-		   Object4D retobj4D = null;
-		   for (int i=0; i<obj4Dv.size(); i++){
-			   if ((obj4Dv.get(i).timepoint == tpoint) 
-				  && (obj4Dv.get(i).dotID == dotID)){
-				  
-				   retobj4D = obj4Dv.get(i);
-			   }
-		   }		   
-		   return retobj4D;
-	   }
-	   
-	   //since there is only one dot in a channel, there could be only one link, with three cases
-	   int compare2x1(int tpoint){
-		   int flag = 0;
-		   int ch0dots = returnDotNumber(obj4Dch0, tpoint);
-		   int ch1dots = returnDotNumber(obj4Dch1, tpoint);
-		   Object4D ch0id1  = returnObj4D(obj4Dch0, tpoint, 1);
-		   Object4D ch1id1  = returnObj4D(obj4Dch1, tpoint, 1);
-		   Measure m = new Measure();
-		   if (ch0dots == 1) {
-			   Object4D ch1id2  = returnObj4D(obj4Dch1, tpoint, 2);
-			   double dist1 =m.returnDistanceZfact(ch0id1, ch1id1, zfactor);
-			   double dist2 =m.returnDistanceZfact(ch0id1, ch1id2, zfactor);
-			   if (dist1 < dist2) flag = 1;
-			   else flag = 2;
-		   } else {
-			   Object4D ch0id2  = returnObj4D(obj4Dch0, tpoint, 2);
-			   double dist1 =m.returnDistanceZfact(ch0id1, ch1id1, zfactor);
-			   double dist2 =m.returnDistanceZfact(ch0id2, ch1id1, zfactor);
-			   if (dist1 < dist2) flag = 1;
-			   else flag = 3;			   
-		   }
-		   return flag;
-	   }
-	   
-	   //only two cases  of combinations
-	   int compare2x2(int tpoint){
-		   int flag =0;
-		   Object4D ch0id1  = returnObj4D(obj4Dch0, tpoint, 1);
-		   Object4D ch0id2  = returnObj4D(obj4Dch0, tpoint, 2);
-		   Object4D ch1id1  = returnObj4D(obj4Dch1, tpoint, 1);
-		   Object4D ch1id2  = returnObj4D(obj4Dch1, tpoint, 2);
-		   Measure m = new Measure();
-		   double dist1 = m.returnDistanceZfact(ch0id1, ch1id1, zfactor) + m.returnDistanceZfact(ch0id2, ch1id2, zfactor);
-		   double dist2 = m.returnDistanceZfact(ch0id1, ch1id2, zfactor) + m.returnDistanceZfact(ch0id2, ch1id1, zfactor);
-		   if (dist1 < dist2) flag = 1;
-		   else flag = 2;		   
-		   return flag;
-	   }
-	   /** Link objects in two channels<br>
-	    * <br>
-	    * assumes that <b>there is only one or two pairs</b>.<br>
-	    * Picks up largest and/or nearest particle first.  
-	    * <br>
-	    * TODO in one case, dots in different daughter cells were linked. This should be avoided. 
-	    */
-	   public Object4D[][] dotLinker(Vector<Object4D> obj4Dch0,  Vector<Object4D> obj4Dch1, int tframes){
-		   Object4D[][] linked = new Object4D[tframes][4]; 
-		   Object4D obj4Dch0id1, obj4Dch1id1;
-		   Object4D obj4Dch0id2, obj4Dch1id2;		   
-		   int flag = 0;
-		   
-		   for (int i = 0; i < tframes; i++){
-			   obj4Dch0id1 = returnObj4D(obj4Dch0, i, 1);	
-			   obj4Dch1id1 = returnObj4D(obj4Dch1, i, 1);
-			   obj4Dch0id2 = returnObj4D(obj4Dch0, i, 2);	
-			   obj4Dch1id2 = returnObj4D(obj4Dch1, i, 2);
-			   if ((obj4Dch0id1 != null) && (obj4Dch1id1 != null)) {
-				   
-				   // 1x1 case
-				   if ((obj4Dch0id2 == null) && (obj4Dch1id2 == null)) { 
-					   linked[i][0] = obj4Dch0id1;
-					   linked[i][1] = obj4Dch1id1;				   
-				   } else {
-					   if ((obj4Dch0id2 != null) && (obj4Dch1id2 != null)) { // 2x2 both channels contain multiple dots
-						   flag = compare2x2(i);
-						   if (flag == 1) {
-							   linked[i][0] = obj4Dch0id1;
-							   linked[i][1] = obj4Dch1id1;
-							   linked[i][2] = obj4Dch0id2;
-							   linked[i][3] = obj4Dch1id2;							   
-						   } else {
-							   linked[i][0] = obj4Dch0id1;
-							   linked[i][1] = obj4Dch1id2;
-							   linked[i][2] = obj4Dch0id2;
-							   linked[i][3] = obj4Dch1id1;
-						   }
-					   } else {	//2x1 one channel contains only one dots
-						   flag = compare2x1(i);
-						   if (flag == 1) {
-							   linked[i][0] = obj4Dch0id1;
-							   linked[i][1] = obj4Dch1id1;
-						   } else {
-							   if (flag == 2){
-								   linked[i][0] = obj4Dch0id1;
-								   linked[i][1] = obj4Dch1id2;
-							   } else {
-								   linked[i][0] = obj4Dch0id2;
-								   linked[i][1] = obj4Dch1id1;
-							   }
-						   }
-					   }
-				   }
-			   }
-		   }
-		   return linked;
-	   }
 	   
 	   public boolean setScale(ImagePlus imp){
 		   boolean gotScale = false;
