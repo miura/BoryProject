@@ -278,22 +278,7 @@ public class AutoThresholdAdjuster3D {   // there should be a constructor with r
 		return true; 
 	}
 	
-	
-	// to print out linked dots and infromation in log window. 
-	void linkresultsPrinter(Object4D[][] linkedArray){
-		 for (int j = 0; j < linkedArray.length; j++){
-			 IJ.log("tframe = "+Integer.toString(j));
-			 for (int i = 0; i< linkedArray[0].length; i++){
-				 if (linkedArray[j][i] == null){
-					 IJ.log("...");					 
-				 } else {
-				 IJ.log("... ID = " + Integer.toString(linkedArray[j][i].dotID)
-						 + " ... " +  linkedArray[j][i].chnum
-						 + " ...Volume = " + Integer.toString(linkedArray[j][i].size));
-				 }
-			 }
-		 }
-	}
+
 
 	/** Z projection of 4D stack, each time point projected to 2D.<br> 
 	 *this might not be usefule these days as native z-projection supports 4D. 

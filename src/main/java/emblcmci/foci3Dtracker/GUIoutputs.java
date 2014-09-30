@@ -1,5 +1,6 @@
 package emblcmci.foci3Dtracker;
 
+import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
 import ij.measure.ResultsTable;
@@ -164,6 +165,23 @@ public class GUIoutputs {
 		dupimp.show();
 		
 	}	
+	
+	// to print out linked dots and infromation in log window. 
+	void linkresultsPrinter(Object4D[][] linkedArray){
+		 for (int j = 0; j < linkedArray.length; j++){
+			 IJ.log("tframe = "+Integer.toString(j));
+			 for (int i = 0; i< linkedArray[0].length; i++){
+				 if (linkedArray[j][i] == null){
+					 IJ.log("...");					 
+				 } else {
+				 IJ.log("... ID = " + Integer.toString(linkedArray[j][i].dotID)
+						 + " ... " +  linkedArray[j][i].chnum
+						 + " ...Volume = " + Integer.toString(linkedArray[j][i].size));
+				 }
+			 }
+		 }
+	}
+	
 // Form here, old guys, maybe delete. 
 	
 	/**
