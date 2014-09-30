@@ -1,11 +1,9 @@
 package emblcmci.foci3Dtracker;
 
 import emblcmci.foci3Dtracker.Object4D;
-import Utilities.Object3D;
-
 import ij.measure.Calibration;
 
-import java.util.Vector;
+import java.util.ArrayList;
 
 
 /** Link objects in two channels<br>
@@ -17,8 +15,8 @@ import java.util.Vector;
 * TODO make more flexible in terms of number of objects, e. g. up to 8 dots in meiosis.
 */
 public class DotLinker{
-	Vector<Object4D> ch0;
-	Vector<Object4D> ch1;
+	ArrayList<Object4D> ch0;
+	ArrayList<Object4D> ch1;
 	int nFrames;
 	// array of arrays to store results in.
 	Object4D[][] linkedDots;
@@ -28,7 +26,7 @@ public class DotLinker{
 	public DotLinker(){}
 
 	// useful methods for empty construction.
-	public void setDots(Vector<Object4D> ch0, Vector<Object4D> ch1){
+	public void setDots(ArrayList<Object4D> ch0, ArrayList<Object4D> ch1){
 		this.ch0 = ch0;
 		this.ch1 = ch1;
 	}
@@ -40,7 +38,7 @@ public class DotLinker{
 	
 	
 	// constructor with two Vector<Object4D>s that contain the Object4Ds that are supposed to be linked.
-	public DotLinker(Vector<Object4D> ch0, Vector<Object4D> ch1, int nFrames){
+	public DotLinker(ArrayList<Object4D> ch0, ArrayList<Object4D> ch1, int nFrames){
 		this.ch0 = ch0;
 		this.ch1 = ch1;
 		this.nFrames = nFrames;
@@ -106,7 +104,7 @@ public class DotLinker{
 	   }	
 	
 	   // dotID could only be 1 or 2 (0 does not exist)
-	   Object4D returnObj4D(Vector<Object4D> obj4Dv, int tpoint, int dotID){
+	   Object4D returnObj4D(ArrayList<Object4D> obj4Dv, int tpoint, int dotID){
 		   Object4D retobj4D = null;
 		   for (int i=0; i<obj4Dv.size(); i++){
 			   if ((obj4Dv.get(i).timepoint == tpoint) 
@@ -182,7 +180,7 @@ public class DotLinker{
 		}
 		
 		// returns number of dots at single time point
-		int returnDotNumber(Vector<Object4D> obj4D, int timepoint){
+		int returnDotNumber(ArrayList<Object4D> obj4D, int timepoint){
 			int counter = 0;
 			for (int i = 0; i < obj4D.size(); i++){
 				if (obj4D.get(i).timepoint == timepoint) counter++;

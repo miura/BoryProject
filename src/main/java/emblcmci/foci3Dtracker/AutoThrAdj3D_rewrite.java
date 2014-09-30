@@ -5,7 +5,7 @@ package emblcmci.foci3Dtracker;
  */
 
 // Java imports
-import java.util.Vector;
+import java.util.ArrayList;
 
 // ImageJ imports
 import ij.*;
@@ -22,10 +22,10 @@ public class AutoThrAdj3D_rewrite {
 	Object4D obj4d;
 
 	/** Vector for storing detected dots in channel 0 */
-	Vector<Object4D> obj4Dch0 = new Vector<Object4D>();
+	ArrayList<Object4D> obj4Dch0 = new ArrayList<Object4D>();
 
 	/** Vector for storing detected dots in channel 1 */
-	Vector<Object4D> obj4Dch1 = new Vector<Object4D>();
+	ArrayList<Object4D> obj4Dch1 = new ArrayList<Object4D>();
 
 	/**
 	 * Array for linked 4D objects, field variable to store the results of

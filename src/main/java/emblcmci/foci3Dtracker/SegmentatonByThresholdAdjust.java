@@ -1,5 +1,6 @@
 package emblcmci.foci3Dtracker;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Vector;
 
@@ -23,8 +24,8 @@ import ij.plugin.ZProjector;
 public class SegmentatonByThresholdAdjust extends Segmentation {
 	ImagePlus imp0;
 	ImagePlus imp1;
-	Vector<Object4D> obj4Dch0;
-	Vector<Object4D> obj4Dch1;
+	ArrayList<Object4D> obj4Dch0;
+	ArrayList<Object4D> obj4Dch1;
 
 	ParamSetter para = new ParamSetter();
 	int maxXYPixels = 25; //@TODO maximal area in px of the dot on z-projection,
@@ -91,7 +92,7 @@ public class SegmentatonByThresholdAdjust extends Segmentation {
 
 	@Override
 	public SegmentatonByThresholdAdjust setComponents(ImagePlus imp0,
-			ImagePlus imp1, Vector<Object4D> obj4Dch0, Vector<Object4D> obj4Dch1) {
+			ImagePlus imp1, ArrayList<Object4D> obj4Dch0, ArrayList<Object4D> obj4Dch1) {
 		SegmentatonByThresholdAdjust seg = new SegmentatonByThresholdAdjust();
 		this.imp0 = imp0;
 		this.imp1 = imp1;
@@ -197,7 +198,7 @@ public class SegmentatonByThresholdAdjust extends Segmentation {
 	public int measureDots(ImagePlus imp, String chnum, // removed argument
 														// zframes, should be in
 														// imp format!
-			Vector<Object4D> obj4dv) {
+			ArrayList<Object4D> obj4dv) {
 
 		int nSlices = imp.getNSlices(); // nSlices: number of z slices
 		if (nSlices == 1)

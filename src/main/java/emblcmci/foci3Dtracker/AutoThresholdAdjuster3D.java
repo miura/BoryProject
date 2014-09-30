@@ -9,7 +9,7 @@ package emblcmci.foci3Dtracker;
  */
 
 import java.awt.Rectangle;
-import java.util.Vector;
+import java.util.ArrayList;
 
 import ij.IJ;
 import ij.ImagePlus;
@@ -42,10 +42,10 @@ public class AutoThresholdAdjuster3D { // there should be a constructor with
 	Object4D obj4d; // Object3D added with time point and channel number fields.
 
 	/** Vector for storing detected dots in channel 0 */
-	Vector<Object4D> obj4Dch0 = new Vector<Object4D>();
+	ArrayList<Object4D> obj4Dch0 = new ArrayList<Object4D>();
 
 	/** Vector for storing detected dots in channel 1 */
-	Vector<Object4D> obj4Dch1 = new Vector<Object4D>();
+	ArrayList<Object4D> obj4Dch1 = new ArrayList<Object4D>();
 
 	/** Array for linked 4D objects, field variable to store the results of */
 	Object4D[][] linkedArray;
@@ -205,10 +205,7 @@ public class AutoThresholdAdjuster3D { // there should be a constructor with
 			// binimp1 = segmentaitonByObjectSize(imp1);
 			seg = new SegmentatonByThresholdAdjust();
 			seg.setComponents(imp0, imp1, this.obj4Dch0, this.obj4Dch1);
-//			((SegmentatonByThresholdAdjust) seg).setThresholdAdjParameters(
-//					maxXYPixels, maxspotvoxels, minspotvoxels,
-//					minspotvoxels_measure, maxloops, thadj_volmin,
-//					thadj_volmax, thadj_nummin, thadj_nummax);
+
 		} else {
 			return false;
 		}

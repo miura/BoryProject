@@ -12,6 +12,7 @@ import ij.process.ImageProcessor;
 import ij.process.StackConverter;
 
 import java.awt.Color;
+import java.util.ArrayList;
 import java.util.Vector;
 
 import Utilities.Object3D;
@@ -27,8 +28,8 @@ public class GUIoutputs {
 			Object4D[][] linkedArray, 
 			ImagePlus imp0, 
 			ImagePlus imp1,
-			Vector<Object4D> obj4Dch0, 
-			Vector<Object4D> obj4Dch1){
+			ArrayList<Object4D> obj4Dch0, 
+			ArrayList<Object4D> obj4Dch1){
 		drawlinksGrayscale(linkedArray, imp0, imp1);
 		//plotDetectedDots(obj4Dch0, imp0, Color.yellow);
 		//plotDetectedDots(obj4Dch1, imp1, Color.red);
@@ -91,7 +92,7 @@ public class GUIoutputs {
 	 * Show Object4D vector in Results window. 
 	 * @param obj4Dv Vector<Object4D>
 	 */
-	public void showStatistics(Vector<Object4D> obj4Dv){
+	public void showStatistics(ArrayList<Object4D> obj4Dv){
 		ResultsTable rt;        
 		rt=new ResultsTable();	        
 		for (int i=0; i<obj4Dv.size(); i++){
@@ -146,7 +147,7 @@ public class GUIoutputs {
 	 * Creates a new RGB 
 	 * imp  grayscale image
 	 */
-	public void plotDetectedDots(Vector<Object4D> obj4dv, ImagePlus imp, Color color){
+	public void plotDetectedDots(ArrayList<Object4D> obj4dv, ImagePlus imp, Color color){
 		Duplicator dup = new Duplicator();
 		ImagePlus dupimp = dup.run(imp);
 		new StackConverter(dupimp).convertToRGB();
