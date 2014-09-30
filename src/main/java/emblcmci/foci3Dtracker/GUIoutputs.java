@@ -7,6 +7,7 @@ import ij.measure.ResultsTable;
 import ij.plugin.Duplicator;
 import ij.plugin.GroupedZProjector;
 import ij.plugin.StackCombiner;
+import ij.plugin.ZProjector;
 import ij.process.ImageProcessor;
 import ij.process.StackConverter;
 
@@ -200,6 +201,30 @@ public class GUIoutputs {
 		+" : IntDen"+Float.toString(cObj.int_dens);
 		return opt;
 	}
+	
+	/** Z projection of 4D stack, each time point projected to 2D.<br> 
+	 *this might not be usefule these days as native z-projection supports 4D. 
+	 * @param imp: 4D stack ImagePlus
+	 * @param zframes: number of z slices
+	 * @param tframes: number of time points.
+	 * @return
+	 */
+	public ImagePlus createZprojTimeSeries(ImagePlus imp, int zframes, int tframes){
+		ImageStack zprostack = new ImageStack();
+		zprostack = imp.createEmptyStack();
+		ZProjector zpimp = new ZProjector(imp);
+		zpimp.setMethod(1); //1 is max intensity projection	
+		for (int i=0; i<tframes;i++){
+			zpimp.setStartSlice(i*zframes+1);
+			zpimp.setStopSlice((i+1)*zframes);
+			zpimp.doProjection();
+			zprostack.addSlice("t="+Integer.toString(i+1), zpimp.getProjection().getProcessor());
+		}
+		ImagePlus projimp = new ImagePlus("proj" + imp.getTitle(), zprostack);
+		//projimp.setStack(zprostack);
+		return projimp;				
+	}
+
 	
 // Form here, old guys, maybe delete. 
 	

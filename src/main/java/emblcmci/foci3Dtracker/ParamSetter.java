@@ -14,6 +14,8 @@ public class ParamSetter{
 	private String[] segMethods = { "AutoThreshold", "TrainableSegmentation"};
 	private static int segMethod = 0;
 	
+	private static int maxXYPixels = 25;
+	
 	private static int maxspotvoxels = 200; // 200 voxels based on measurement of nice dot in dtTomato channel at 100x objective, 2x2 binning, 80 ms exposure, 33 % intensity on DV; Improved segmentation and lowered computation time significantly! was 3000000;
 	
 	/**Object volume minimum for volume-based segmentation*/
@@ -129,6 +131,34 @@ public class ParamSetter{
 	}
 	
 	/**
+	 * @return the segMethods
+	 */
+	public String[] getSegMethods() {
+		return segMethods;
+	}
+
+	/**
+	 * @param segMethods the segMethods to set
+	 */
+	public void setSegMethods(String[] segMethods) {
+		this.segMethods = segMethods;
+	}
+
+	/**
+	 * @return the maxXYPixels
+	 */
+	public static int getMaxXYPixels() {
+		return maxXYPixels;
+	}
+
+	/**
+	 * @param maxXYPixels the maxXYPixels to set
+	 */
+	public static void setMaxXYPixels(int maxXYPixels) {
+		ParamSetter.maxXYPixels = maxXYPixels;
+	}
+
+	/**
 	 * @param maxspotvoxels the maxspotvoxels to set
 	 */
 	public void setMaxspotvoxels(int maxspotvoxels) {
@@ -138,7 +168,7 @@ public class ParamSetter{
 	/**
 	 * @return the maxspotvoxels
 	 */
-	public int getMaxspotvoxels() {
+	public static int getMaxspotvoxels() {
 		return maxspotvoxels;
 	}
 
@@ -152,7 +182,7 @@ public class ParamSetter{
 	/**
 	 * @return the minspotvoxels
 	 */
-	public int getMinspotvoxels() {
+	public static int getMinspotvoxels() {
 		return minspotvoxels;
 	}
 
@@ -166,7 +196,7 @@ public class ParamSetter{
 	/**
 	 * @return the minspotvoxels_measure
 	 */
-	public int getMinspotvoxels_measure() {
+	public static int getMinspotvoxels_measure() {
 		return minspotvoxels_measure;
 	}
 

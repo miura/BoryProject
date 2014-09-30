@@ -15,22 +15,8 @@ public class AutoThrAdj3D_rewrite {
 
 	// Segmentation parameters
 	ParamSetter para = new ParamSetter();
-	int maxXYPixels = 25; // maximal area in px of the dot on z-projection,
-							// default 25 px
-	int maxspotvoxels, minspotvoxels;
-	int minspotvoxels_measure;
-	int maxloops;
-	int thadj_volmin, thadj_volmax;
-	int thadj_nummin, thadj_nummax;
 
-	private static boolean createComposite = true;
-	int thr, minSize, maxSize, dotSize, fontSize; // minSize, maxSize redundant
-													// to minspotvoxels_measure,
-													// maxspotvoxels,
-													// minspotvoxels?
-	boolean excludeOnEdges, newRT, redirect;
 	boolean silent = false;
-	boolean showMaskedImg = false;
 
 	/** Object4D extends Object3D by timepoint, channel, dotID */
 	Object4D obj4d;
@@ -66,36 +52,22 @@ public class AutoThrAdj3D_rewrite {
 			int minspotvoxels, int minspotvoxels_measure, int maxloops,
 			int thadj_volmin, int thadj_volmax, int thadj_nummin,
 			int thadj_nummax) {
-		this.maxXYPixels = maxXYPixels;
-		this.maxspotvoxels = maxspotvoxels;
-		this.minspotvoxels = minspotvoxels;
-		this.minspotvoxels_measure = minspotvoxels_measure;
-		this.maxloops = maxloops;
-		this.thadj_volmin = thadj_volmin;
-		this.thadj_volmax = thadj_volmax;
-		this.thadj_nummin = thadj_nummin;
-		this.thadj_nummax = thadj_nummax;
+		para.setMaxspotvoxels(maxspotvoxels);
+		para.setMinspotvoxels(minspotvoxels);
+		para.setMinspotvoxels_measure(minspotvoxels_measure);
+		para.setMaxloops(maxloops);
+		para.setThadj_volmin(thadj_volmin);
+		para.setThadj_volmax(thadj_volmax);
+		para.setThadj_nummin(thadj_nummin);
+		para.setThadj_nummax(thadj_nummax);
+		
 	}
-
 	/* Methods */
-
-	// public void setParameters(){} // paramsetter object?
-	public void setParam(ParamSetter p) {
-		maxspotvoxels = p.getMaxspotvoxels();
-		minspotvoxels = p.getMinspotvoxels();
-		minspotvoxels_measure = p.getMinspotvoxels_measure();
-		maxloops = p.getMaxloops();
-		thadj_volmin = p.getThadj_volmin();
-		thadj_volmax = p.getThadj_volmax();
-		thadj_nummin = p.getThadj_nummin();
-		thadj_nummax = p.getThadj_nummax();
-		segMethod = p.getSegMethod();
-	}
 
 	public void setSilent(boolean z) {
 		this.silent = z;
 	}
-
+/* this should be rewritten
 	// Just a convenient method to later get the segmentation parameters with
 	// one line.
 	public int[] getParameters() {
@@ -104,7 +76,8 @@ public class AutoThrAdj3D_rewrite {
 				this.thadj_volmax, this.thadj_nummin, this.thadj_nummax };
 		return parameters;
 	}
-
+*/
+	
 	public Object4D[][] getLinkedArray() {
 		return linkedArray;
 	}
@@ -122,10 +95,6 @@ public class AutoThrAdj3D_rewrite {
 
 		Segmentation seg = new SegmentatonByThresholdAdjust();
 		seg.setComponents(imp0, imp1, obj4Dch0, obj4Dch1);
-		((SegmentatonByThresholdAdjust) seg).setThresholdAdjParameters(
-				maxXYPixels, maxspotvoxels, minspotvoxels,
-				minspotvoxels_measure, maxloops, thadj_volmin, thadj_volmax,
-				thadj_nummin, thadj_nummax);
 		this.linkedArray = seg.doSegmentation();
 		GUIoutputs out = new GUIoutputs();
 		this.linkedImage = out.drawlinksGrayscale(this.linkedArray, imp0, imp1);
@@ -134,11 +103,12 @@ public class AutoThrAdj3D_rewrite {
 			out.showStatistics(obj4Dch0);
 			out.showStatistics(obj4Dch1);
 			out.showDistances(linkedArray);
+			this.linkedImage.show();
 		}
 
-		out.drawlinksGrayscale(linkedArray, imp0, imp1);
-		// plotDetectedDots(obj4Dch0, imp0, Color.yellow);
-		// plotDetectedDots(obj4Dch1, imp1, Color.red);
+		// out.drawlinksGrayscale(linkedArray, imp0, imp1);
+		// out.plotDetectedDots(obj4Dch0, imp0, Color.yellow);
+		// out.plotDetectedDots(obj4Dch1, imp1, Color.red);
 		return true;
 	}
 
@@ -150,10 +120,6 @@ public class AutoThrAdj3D_rewrite {
 		calkeep = cal.copy();
 		zfactor = cal.pixelDepth / cal.pixelWidth;
 		return true;
-	}
-
-	public void setSegmenter(Segmentation segmenter) {
-		this.segmenter = segmenter;
 	}
 
 	/**

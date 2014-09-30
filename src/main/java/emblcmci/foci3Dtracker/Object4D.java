@@ -1,5 +1,6 @@
 package emblcmci.foci3Dtracker;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Vector;
 
 /*
@@ -180,4 +181,66 @@ public class Object4D extends Object3D{
 		}	
 	}
 	
+}
+
+/**
+ * for sorting Object3D Vector, descending order by size (volume)
+ */
+class ComparerBysize3D implements Comparator<Object3D> {
+	public static final int ASC = 1;
+	public static final int DESC = -1;
+	private int sort = ASC;
+
+	public ComparerBysize3D() {
+	}
+
+	public ComparerBysize3D(int sort) {
+		this.sort = sort;
+	}
+
+	public int compare(Object3D o1, Object3D o2) {
+
+		Object3D obj3d1 = (Object3D) o1;
+		Object3D obj3d2 = (Object3D) o2;
+		int i = 0;
+		if (obj3d1.size < obj3d2.size)
+			i = -1 * sort;
+		if (obj3d1.size == obj3d2.size)
+			i = 0;
+		if (obj3d1.size > obj3d2.size)
+			i = 1 * sort;
+		return i;
+	}
+}
+
+/**
+ * for sorting Object4D, descending order by score (of none-particle criteria)
+ * 
+ * @author Miura
+ * 
+ */
+class ComparerByscore4D implements Comparator<Object4D> {
+	public static final int ASC = 1;
+	public static final int DESC = -1;
+	private int sort = ASC;
+
+	public ComparerByscore4D() {
+	}
+
+	public ComparerByscore4D(int sort) {
+		this.sort = sort;
+	}
+
+	public int compare(Object4D o1, Object4D o2) {
+		Object4D obj4d1 = (Object4D) o1;
+		Object4D obj4d2 = (Object4D) o2;
+		int i = 0;
+		if (obj4d1.score < obj4d2.score)
+			i = -1 * sort;
+		if (obj4d1.score == obj4d2.score)
+			i = 0;
+		if (obj4d1.score > obj4d2.score)
+			i = 1 * sort;
+		return i;
+	}
 }
