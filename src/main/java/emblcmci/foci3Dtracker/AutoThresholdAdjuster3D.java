@@ -8,25 +8,26 @@ package emblcmci.foci3Dtracker;
  * @ cmci, embl miura@embl.de
  */
 
-import java.awt.Color;
 import java.awt.Rectangle;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Vector;
 
+import ij.IJ;
+import ij.ImagePlus;
+import ij.ImageStack;
+import ij.Prefs;
+import ij.WindowManager;
 import ij.plugin.Duplicator;
-import ij.*;
-import Utilities.Counter3D;
-import Utilities.Object3D;
 import ij.gui.GenericDialog;
 import ij.gui.Line;
 import ij.gui.Roi;
 import ij.measure.Calibration;
-import ij.measure.ResultsTable;
 import ij.plugin.*;
-import ij.process.ImageProcessor;
-import ij.process.StackConverter;
 import ij.process.StackProcessor;
+
+import Utilities.Counter3D;
+import Utilities.Object3D;
 
 public class AutoThresholdAdjuster3D {   // there should be a constructor with respective MaxSpotVoxels, MinSpotVoxels, MaxLoops?
 	private static boolean createComposite = true;
@@ -143,6 +144,7 @@ public class AutoThresholdAdjuster3D {   // there should be a constructor with r
 			IJ.error("Channel 1 is not a stack");
 			return;
 		}
+		// @TODO setting scale should be associated with measurement class
 		if (!setScale(imp0)){
 			IJ.error("Voxel Depth(z)is not defined correctly: check [Image -> properties]");
 			return;
@@ -160,7 +162,8 @@ public class AutoThresholdAdjuster3D {   // there should be a constructor with r
 		//    ... then start of segmentation and measurements
 		if ((r0 == null) && (r1 == null)){				
 			segAndMeasure( imp0, imp1);
-			drawResultImages( linkedArray, imp0, imp1, obj4Dch0, obj4Dch1);
+			GUIoutputs out = new GUIoutputs(); 
+			out.drawResultImages( linkedArray, imp0, imp1, obj4Dch0, obj4Dch1);
 
 		} else {
 			ImagePlus imp0roi = null;
@@ -208,7 +211,8 @@ public class AutoThresholdAdjuster3D {   // there should be a constructor with r
 			}
 						
 			segAndMeasure(imp0roi, imp1roi);
-			drawResultImages( linkedArray, imp0, imp1, obj4Dch0, obj4Dch1);
+			GUIoutputs out = new GUIoutputs(); 
+			out.drawResultImages( linkedArray, imp0, imp1, obj4Dch0, obj4Dch1);
 		}
 	}
 	
@@ -258,26 +262,16 @@ public class AutoThresholdAdjuster3D {   // there should be a constructor with r
 		linkedArray = dotLinker(obj4Dch0,  obj4Dch1, imp0.getNFrames());
 		
 		if (silent == false) {
-			showStatistics(obj4Dch0);
-			showStatistics(obj4Dch1);
-			showDistances(linkedArray);
+			GUIoutputs out = new GUIoutputs();
+			out.showStatistics(obj4Dch0);
+			out.showStatistics(obj4Dch1);
+			out.showDistances(linkedArray);
 			}
 		
 		return true; 
 	}
 	
-	// added on 20140926
-	public void drawResultImages(
-			Object4D[][] linkedArray, 
-			ImagePlus imp0, 
-			ImagePlus imp1,
-			Vector<Object4D> obj4Dch0, 
-			Vector<Object4D> obj4Dch1){
-		drawlinksGrayscale(linkedArray, imp0, imp1);
-		plotDetectedDots(obj4Dch0, imp0, Color.yellow);
-		plotDetectedDots(obj4Dch1, imp1, Color.red);
-		
-	}
+
 	/** Stores particle parameters 
 	 * <ul>
 	 * <li>centroid<li>coordinates<li>moments<li>scores
@@ -380,81 +374,7 @@ public class AutoThresholdAdjuster3D {   // there should be a constructor with r
 		imp.updateAndDraw();
 	}
 
-	/**plotting linked lines, but with original gray scale image (will be converted to RGB).
-	 * 
-	 * @param linked
-	 * @param imp0
-	 * @param imp1
-	 * @author Kota Miura
-	 */
-	public void drawlinksGrayscale(Object4D[][] linked, ImagePlus imp0, ImagePlus imp1){
-		ImagePlus ch0proj = null;
-		ImagePlus ch1proj = null;
-		ch0proj = createZprojTimeSeries(imp0, imp0.getNSlices(), imp0.getNFrames());
-		ch1proj = createZprojTimeSeries(imp1, imp1.getNSlices(), imp1.getNFrames());
-		new StackConverter(ch0proj).convertToRGB();
-		new StackConverter(ch1proj).convertToRGB();
-		
-		int offset = 0;
-		int ch0x, ch0y, ch1x, ch1y;
-		for(int i = 0;  i < linked.length; i++) {
-			for(int j = 0;  j < linked[0].length; j += 2) {
-				if (linked[i][j] != null){
-					ch0x = Math.round(linked[i][j].centroid[0] - offset);
-					ch0y = Math.round(linked[i][j].centroid[1] - offset);
-					ch1x = Math.round(linked[i][j + 1].centroid[0] - offset);
-					ch1y = Math.round(linked[i][j + 1].centroid[1] - offset);
 
-					ImageProcessor ip0 = ch0proj.getStack().getProcessor(linked[i][j].timepoint + 1);
-					ip0.setColor(Color.blue);
-					ip0.drawLine(ch0x, ch0y, ch1x, ch1y);
-					ip0.setColor(Color.yellow);
-					ip0.drawPixel(ch0x, ch0y);
-					ip0.setColor(Color.red);
-					ip0.drawPixel(ch1x, ch1y);					
-
-					ImageProcessor ip1 = ch1proj.getStack().getProcessor(linked[i][j].timepoint + 1);
-					ip1.setColor(Color.blue);
-					ip1.drawLine(ch0x, ch0y, ch1x, ch1y);
-					ip1.setColor(Color.yellow);
-					ip1.drawPixel(ch0x, ch0y);
-					ip1.setColor(Color.red);
-					ip1.drawPixel(ch1x, ch1y);
-					
-				}	
-			}
-		}
-		ImageStack combined = new StackCombiner().combineHorizontally(ch0proj.getStack(), ch1proj.getStack());
-		ImagePlus combimp = new ImagePlus("DetectedDots", combined);
-		
-		combimp.show();
-	}
-	/* for plotting Object4Ds detected by segmentation. 
-	 * Creates a new RGB 
-	 * imp  grayscale image
-	 */
-	public void plotDetectedDots(Vector<Object4D> obj4dv, ImagePlus imp, Color color){
-		Duplicator dup = new Duplicator();
-		ImagePlus dupimp = dup.run(imp);
-		new StackConverter(dupimp).convertToRGB();
-		float x, y, z;
-		int timepoint;
-		int nSlices = imp.getNSlices();
-		int nFrames = imp.getNFrames();
-		if (nFrames <= 1) return;
-		ImageProcessor ip = null;
-		for (int i = 0; i < obj4dv.size(); i++) {
-			x = obj4dv.get(i).centroid[0];
-			y = obj4dv.get(i).centroid[1];
-			z = obj4dv.get(i).centroid[2];
-			timepoint = obj4dv.get(i).timepoint;
-			ip = dupimp.getStack().getProcessor(timepoint * nSlices + Math.round(z)); //TODO
-			ip.setColor(color);
-			ip.drawPixel(Math.round(x), Math.round(y));
-		}
-		dupimp.show();
-		
-	}
 
 	/** Z projection of 4D stack, each time point projected to 2D.<br> 
 	 *this might not be usefule these days as native z-projection supports 4D. 
@@ -575,6 +495,8 @@ public class AutoThresholdAdjuster3D {   // there should be a constructor with r
 		// check initial condition
 		excludeOnEdges = false;
 		redirect = false; // this is the option to suppress the showing of masked images??
+		Prefs.set("3D-OC-Options_showMaskedImg.boolean",false); // answer for Christoph: this line.
+		
 		Counter3D OC = new Counter3D(impcopy, initTh, minspotvoxels, (int) maxspotvoxels*2, excludeOnEdges, redirect);
 		Vector<Object3D> obj = OC.getObjectsList();
 		int nobj = obj.size();
@@ -640,6 +562,7 @@ public class AutoThresholdAdjuster3D {   // there should be a constructor with r
 		maxSize = 1000;
 		excludeOnEdges = false;
 		redirect = false;
+		Prefs.set("3D-OC-Options_showMaskedImg.boolean", false);
 		
 		for (int j=0; j<tframes; j++){
 			imps = singletime.run(imp, j*zframes+1, j*zframes+zframes); 
@@ -690,74 +613,6 @@ public class AutoThresholdAdjuster3D {   // there should be a constructor with r
 		return linkedArray;
 	}
 	
-	
-	/**
-	 * Show Object4D vector in Results window. 
-	 * 
-	 * @param obj4Dv Vector<Object4D>
-	 */
-	   public void showStatistics(Vector<Object4D> obj4Dv){
-	        ResultsTable rt;        
-	        rt=new ResultsTable();	        
-	        for (int i=0; i<obj4Dv.size(); i++){
-	            if (obj4Dv.get(i).centroid.length > 1){
-	            	rt.incrementCounter();
-	            	rt.setValue("frame", i, obj4Dv.get(i).timepoint);
-	            	rt.setValue("dotID", i, obj4Dv.get(i).dotID);
-	            	rt.setValue("Volume", i, obj4Dv.get(i).size);
-	            	rt.setValue("x", i, obj4Dv.get(i).centroid[0]);
-		            rt.setValue("y", i, obj4Dv.get(i).centroid[1]);
-		            rt.setValue("z", i, obj4Dv.get(i).centroid[2]);
-		            rt.setValue("Intden", i, obj4Dv.get(i).int_dens);
-	            }
-	        }
-	       
-	        rt.show("Statistics_"+obj4Dv.get(0).chnum);     
-	    }
-	   
-	   public void showDistances(Object4D[][] linked){
-	        ResultsTable rt;        
-	        rt=new ResultsTable();
-	        int ct = 0;
-	        double ch0ch1dist = -1;
-	        for (int i=0; i<linked.length; i++){
-	        	for (int j = 0; j < linked[0].length; j+=2){
-		        	if ((linked[i][j] != null) && (linked[i][j+1] != null)){
-		        		rt.incrementCounter();
-		        		ch0ch1dist = returnDistance(linked[i][j], linked[i][j+1]);
-		        		rt.setValue("frame", ct, linked[i][j].timepoint);
-			            rt.setValue("ch0-ch1_dist", ct, ch0ch1dist);
-			            double ch0dist = 0;
-			            double ch1dist = 0;
-						if (linked[i][3] != null) {
-			            	ch0dist = returnDistance(linked[i][0], linked[i][2]);
-							ch1dist = returnDistance(linked[i][1], linked[i][3]);
-						}
-			            rt.setValue("ch0-ch0_dist", ct, ch0dist);
-			            rt.setValue("ch1-ch1_dist", ct, ch1dist);
-			            rt.setValue("ch0vol", ct, linked[i][j].size);
-			            rt.setValue("ch1vol", ct, linked[i][j+1].size);
-			            
-			            ct++;
-		        	}
-	        	}
-	        }
-	       
-	        rt.show("Statistics_Distance");     
-	    }
-	   //for calculating distance from index
-	   public double returnDistance(Object4D obj1, Object4D obj2){
-		   double dist = -1.0;
-		   if ((obj1.centroid.length > 1) && (obj2.centroid.length > 1)) {
-			   double sqd = (
-					   Math.pow(obj1.centroid[0] - obj2.centroid[0], 2.0)    // changed 2 to 2.0
-					   + Math.pow(obj1.centroid[1] - obj2.centroid[1], 2.0) 
-					   + Math.pow((obj1.centroid[2] - obj2.centroid[2])*zfactor, 2.0)
-					);
-			   dist = Math.pow(sqd, 0.5);
-		   }	
-		   return dist;
-		}
 
 	   // returns number of dots at single time point
 	   int returnDotNumber(Vector<Object4D> obj4D, int timepoint){
@@ -787,16 +642,17 @@ public class AutoThresholdAdjuster3D {   // there should be a constructor with r
 		   int ch1dots = returnDotNumber(obj4Dch1, tpoint);
 		   Object4D ch0id1  = returnObj4D(obj4Dch0, tpoint, 1);
 		   Object4D ch1id1  = returnObj4D(obj4Dch1, tpoint, 1);
+		   Measure m = new Measure();
 		   if (ch0dots == 1) {
 			   Object4D ch1id2  = returnObj4D(obj4Dch1, tpoint, 2);
-			   double dist1 =returnDistance(ch0id1, ch1id1);
-			   double dist2 =returnDistance(ch0id1, ch1id2);
+			   double dist1 =m.returnDistanceZfact(ch0id1, ch1id1, zfactor);
+			   double dist2 =m.returnDistanceZfact(ch0id1, ch1id2, zfactor);
 			   if (dist1 < dist2) flag = 1;
 			   else flag = 2;
 		   } else {
 			   Object4D ch0id2  = returnObj4D(obj4Dch0, tpoint, 2);
-			   double dist1 =returnDistance(ch0id1, ch1id1);
-			   double dist2 =returnDistance(ch0id2, ch1id1);
+			   double dist1 =m.returnDistanceZfact(ch0id1, ch1id1, zfactor);
+			   double dist2 =m.returnDistanceZfact(ch0id2, ch1id1, zfactor);
 			   if (dist1 < dist2) flag = 1;
 			   else flag = 3;			   
 		   }
@@ -810,8 +666,9 @@ public class AutoThresholdAdjuster3D {   // there should be a constructor with r
 		   Object4D ch0id2  = returnObj4D(obj4Dch0, tpoint, 2);
 		   Object4D ch1id1  = returnObj4D(obj4Dch1, tpoint, 1);
 		   Object4D ch1id2  = returnObj4D(obj4Dch1, tpoint, 2);
-		   double dist1 = returnDistance(ch0id1, ch1id1) + returnDistance(ch0id2, ch1id2);
-		   double dist2 = returnDistance(ch0id1, ch1id2) + returnDistance(ch0id2, ch1id1);
+		   Measure m = new Measure();
+		   double dist1 = m.returnDistanceZfact(ch0id1, ch1id1, zfactor) + m.returnDistanceZfact(ch0id2, ch1id2, zfactor);
+		   double dist2 = m.returnDistanceZfact(ch0id1, ch1id2, zfactor) + m.returnDistanceZfact(ch0id2, ch1id1, zfactor);
 		   if (dist1 < dist2) flag = 1;
 		   else flag = 2;		   
 		   return flag;
@@ -893,6 +750,20 @@ public class AutoThresholdAdjuster3D {   // there should be a constructor with r
 	   }
 	   public double getZscale(){
 		   return cal.pixelDepth;
+	   }
+	   
+	   public static void main(String[] args){
+		   
+		   ImagePlus imp0 = IJ.openImage("/Users/miura/Dropbox/people/ChristophSchiklenk/tt/c1pcd.tif");
+		   ImagePlus imp1 = IJ.openImage("/Users/miura/Dropbox/people/ChristophSchiklenk/tt/c2pcd.tif");
+		   AutoThresholdAdjuster3D ata = new AutoThresholdAdjuster3D();
+		   // @TODO setting scale should be associated with measurement class
+			if (!ata.setScale(imp0)){
+				IJ.error("Voxel Depth(z)is not defined correctly: check [Image -> properties]");
+				return;
+			}
+			ata.segAndMeasure(imp0, imp1);
+			
 	   }
 }
 
