@@ -32,6 +32,7 @@ public class GUIoutputs {
 			ArrayList<Object4D> obj4Dch1) {
 		ImagePlus linkplotstack = drawlinksGrayscale(linkedArray, imp0, imp1);
 		linkplotstack.show();
+		// followings are boring plots, plotted dot too small to see 
 		//plotDetectedDots(obj4Dch0, imp0, Color.yellow);
 		//plotDetectedDots(obj4Dch1, imp1, Color.red);
 
@@ -187,7 +188,9 @@ public class GUIoutputs {
 		
 	}	
 	
-	// to print out linked dots and infromation in log window. 
+	/** to print out linked dots and infromation in log window.
+	* @TODO convert to arraylist 
+	*/
 	void linkresultsPrinter(Object4D[][] linkedArray){
 		 for (int j = 0; j < linkedArray.length; j++){
 			 IJ.log("tframe = "+Integer.toString(j));

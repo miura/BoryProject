@@ -184,8 +184,6 @@ public class DotLinker {
 		return flag;
 	}
 
-
-
 	// returns number of dots at single time point
 	public static int returnDotNumber(ArrayList<Object4D> obj4D, int timepoint) {
 		int counter = 0;

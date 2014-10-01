@@ -211,8 +211,6 @@ public class AutoThresholdAdjuster3D { // there should be a constructor with
 		Segmentation seg;
 		// auto adjusted threshold segmentation
 		if (segMethod == 0) {
-			// binimp0 = segmentaitonByObjectSize(imp0);
-			// binimp1 = segmentaitonByObjectSize(imp1);
 			seg = new SegmentatonByThresholdAdjust();
 			seg.setComponents(imp0, imp1, this.obj4Dch0, this.obj4Dch1, zfactor);
 
@@ -220,7 +218,6 @@ public class AutoThresholdAdjuster3D { // there should be a constructor with
 			return false;
 		}
 
-		// linkedArray = dotLinker(obj4Dch0, obj4Dch1, imp0.getNFrames());
 		this.linkedArray = seg.doSegmentation();
 
 		//----GUI, Plottings -----
@@ -291,11 +288,6 @@ public class AutoThresholdAdjuster3D { // there should be a constructor with
 		ImagePlus imp1 = IJ
 				.openImage("/Users/miura/Dropbox/people/ChristophSchiklenk/tt/c2pcd.tif");
 		AutoThresholdAdjuster3D ata = new AutoThresholdAdjuster3D();
-//		// @TODO setting scale should be associated with measurement class
-//		if (!ata.setScale(imp0)) {
-//			IJ.error("Voxel Depth(z)is not defined correctly: check [Image -> properties]");
-//			return;
-//		}
 		ata.showPlot(true);
 		ata.segAndMeasure(imp0, imp1);
 

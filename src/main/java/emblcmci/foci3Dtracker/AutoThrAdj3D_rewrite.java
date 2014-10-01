@@ -91,7 +91,6 @@ public class AutoThrAdj3D_rewrite {
 	 * Methods that do the actual segmentation
 	 */
 	public boolean segAndMeasure(ImagePlus imp0, ImagePlus imp1) {
-		// this.linkedArray = dotLinker(obj4Dch0, obj4Dch1, imp0.getNFrames());
 
 		Segmentation seg = new SegmentatonByThresholdAdjust();
 		seg.setComponents(imp0, imp1, obj4Dch0, obj4Dch1, zfactor);
@@ -106,9 +105,6 @@ public class AutoThrAdj3D_rewrite {
 			this.linkedImage.show();
 		}
 
-		// out.drawlinksGrayscale(linkedArray, imp0, imp1);
-		// out.plotDetectedDots(obj4Dch0, imp0, Color.yellow);
-		// out.plotDetectedDots(obj4Dch1, imp1, Color.red);
 		return true;
 	}
 
@@ -134,11 +130,6 @@ public class AutoThrAdj3D_rewrite {
 		ImagePlus imp1 = IJ
 				.openImage("/Users/miura/Dropbox/people/ChristophSchiklenk/tt/c2pcd.tif");
 		AutoThrAdj3D_rewrite ata = new AutoThrAdj3D_rewrite();
-		// @TODO setting scale should be associated with measurement class
-		if (!ata.setScale(imp0)) {
-			IJ.error("Voxel Depth(z)is not defined correctly: check [Image -> properties]");
-			return;
-		}
 		ata.segAndMeasure(imp0, imp1);
 
 	}

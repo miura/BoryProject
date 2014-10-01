@@ -102,36 +102,19 @@ public class SegmentatonByThresholdAdjust extends Segmentation {
 		return seg;
 	}
 
-//	public void setThresholdAdjParameters(int maxXYPixels, int maxspotvoxels,
-//			int minspotvoxels, int minspotvoxels_measure, int maxloops,
-//			int thadj_volmin, int thadj_volmax, int thadj_nummin,
-//			int thadj_nummax) {
-//		this.maxYXPixels = maxXYPixels;
-//		this.maxspotvoxels = maxspotvoxels;
-//		this.minspotvoxels = minspotvoxels;
-//		this.minspotvoxels_measure = minspotvoxels_measure;
-//		this.maxloops = maxloops;
-//		this.thadj_volmin = thadj_volmin;
-//		this.thadj_volmax = thadj_volmax;
-//		this.thadj_nummin = thadj_nummin;
-//		this.thadj_nummax = thadj_nummax;
-//	}
-
-//	public Object4D[][] doSegmentation() {
 	public ArrayList<FociPair> doSegmentation() {
 
 		// auto adjusted threshold segmentation
 		this.binimp0 = segmentaitonByObjectSize(this.imp0);
 		this.binimp1 = segmentaitonByObjectSize(this.imp1);
-
-		// ImagePlus rgbbin = null;
-
+		IJ.log("========== finished threshold adjusted segmentation =========");
+		IJ.log("... now using 3D object counter to find Foci ....");
+		
 		// 3D object measurement part
-		int ch0objnum = measureDots(this.binimp0, "Ch0", this.obj4Dch0); // measureDots
-																			// writes
+		int ch0objnum = measureDots(this.binimp0, "Ch0", this.obj4Dch0); 					
 		int ch1objnum = measureDots(this.binimp1, "Ch1", this.obj4Dch1);
-
-		IJ.log("========== finished detecting dots =========");
+		IJ.log("========== finished detecting 3D dots =========");
+		
 		IJ.log("... now linking dots in each frame ....");
 		DotLinker linker = new DotLinker(this.obj4Dch0, this.obj4Dch1,
 				this.imp0.getNFrames(), zfactor);
