@@ -225,6 +225,7 @@ public class AutoThresholdAdjuster3D { // there should be a constructor with
 
 		//----GUI, Plottings -----
 		if (!silent) {
+			IJ.log("creating outputs...");
 			GUIoutputs out = new GUIoutputs();
 			out.showStatistics(obj4Dch0);
 			out.showStatistics(obj4Dch1);
@@ -235,6 +236,7 @@ public class AutoThresholdAdjuster3D { // there should be a constructor with
 				if ((segMethod != 2) && (createComposite))
 					out.showCompositeBinary((SegmentatonByThresholdAdjust) seg);
 			}
+			IJ.log("Done.");
 		}
 		return true;
 	}

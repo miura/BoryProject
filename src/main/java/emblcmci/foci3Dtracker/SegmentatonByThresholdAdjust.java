@@ -131,11 +131,14 @@ public class SegmentatonByThresholdAdjust extends Segmentation {
 																			// writes
 		int ch1objnum = measureDots(this.binimp1, "Ch1", this.obj4Dch1);
 
+		IJ.log("========== finished detecting dots =========");
+		IJ.log("... now linking dots in each frame ....");
 		DotLinker linker = new DotLinker(this.obj4Dch0, this.obj4Dch1,
 				this.imp0.getNFrames(), zfactor);
 
 		//Object4D[][] linkedArray = linker.linkDots();
 		ArrayList<FociPair> linkedArray = linker.linkDots();
+		IJ.log("========== finished linking =========");		
 		return linkedArray;
 	}
 
