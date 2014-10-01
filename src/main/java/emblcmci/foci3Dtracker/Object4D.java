@@ -7,6 +7,7 @@ import java.util.Vector;
  * @author Kota Miura
  * @author CMCI, EMBL
  * extending Fabrices' Object3D.java
+ * http://fiji.sc/javadoc/Utilities/Object3D.html
  */
 import Utilities.Object3D;
 

@@ -6,6 +6,7 @@ import ij.ImageStack;
 import ij.measure.ResultsTable;
 import ij.plugin.Duplicator;
 import ij.plugin.GroupedZProjector;
+import ij.plugin.RGBStackMerge;
 import ij.plugin.StackCombiner;
 import ij.plugin.ZProjector;
 import ij.process.ImageProcessor;
@@ -24,16 +25,16 @@ import Utilities.Object3D;
 public class GUIoutputs {
 
 	// added on 20140926
-	public void drawResultImages(
-			Object4D[][] linkedArray, 
-			ImagePlus imp0, 
-			ImagePlus imp1,
-			ArrayList<Object4D> obj4Dch0, 
-			ArrayList<Object4D> obj4Dch1){
-		drawlinksGrayscale(linkedArray, imp0, imp1);
+	public void drawResultImages(Object4D[][] linkedArray, 
+			ImagePlus imp0,
+			ImagePlus imp1, 
+			ArrayList<Object4D> obj4Dch0,
+			ArrayList<Object4D> obj4Dch1) {
+		ImagePlus linkplotstack = drawlinksGrayscale(linkedArray, imp0, imp1);
+		linkplotstack.show();
 		//plotDetectedDots(obj4Dch0, imp0, Color.yellow);
 		//plotDetectedDots(obj4Dch1, imp1, Color.red);
-		
+
 	}
 	/**plotting linked lines, but with original gray scale image (will be converted to RGB).
 	 * 
@@ -86,6 +87,37 @@ public class GUIoutputs {
 		return combimp;
 	}
 
+	public void showCompositeBinary(SegmentatonByThresholdAdjust seg){
+		ImagePlus binimp0 = seg.binimp0;
+		ImagePlus binimp1 = seg.binimp1;
+		ImagePlus ch0proj = createZprojTimeSeries(binimp0, binimp0.getNSlices(),binimp0.getNFrames());
+		ImagePlus ch1proj = createZprojTimeSeries(binimp1, binimp1.getNSlices(), binimp1.getNFrames());
+		RGBStackMerge rgbm = new RGBStackMerge();
+		ImageStack dummy = null;
+		ImageStack rgbstack = rgbm.mergeStacks(
+				ch0proj.getWidth(), 
+				ch0proj.getHeight(),
+				ch0proj.getStackSize(), 
+				ch0proj.getStack(), 
+				ch1proj.getStack(),
+				dummy, true);
+		ImagePlus rgbbin = new ImagePlus("binProjMerged", rgbstack);
+		rgbbin.show();
+	}
+	/* 
+	 * temporarily out, 20140930 
+	 * if ((segMethod != 2) && (createComposite)){ 
+
+	 *  
+	 *  
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 * }
+	 */	
 
 	
 	/**
@@ -146,6 +178,7 @@ public class GUIoutputs {
 	/* for plotting Object4Ds detected by segmentation. 
 	 * Creates a new RGB 
 	 * imp  grayscale image
+	 * Very primitive, so not much used anymore as of 201409
 	 */
 	public void plotDetectedDots(ArrayList<Object4D> obj4dv, ImagePlus imp, Color color){
 		Duplicator dup = new Duplicator();

@@ -24,8 +24,17 @@ import ij.process.StackProcessor;
 public class AutoThresholdAdjuster3D { // there should be a constructor with
 										// respective MaxSpotVoxels,
 										// MinSpotVoxels, MaxLoops?
-	private static boolean createComposite = true;
+	/** 
+	 * True if no tables nor plots to be shown. 
+	 */
 	boolean silent = false;
+	/** 
+	 * True to show plots. 
+	 */
+	boolean showplots = false;
+	private static boolean createComposite = true;
+	
+	
 	boolean showMaskedImg = false;
 
 	ParamSetter para = new ParamSetter();
@@ -33,7 +42,6 @@ public class AutoThresholdAdjuster3D { // there should be a constructor with
 	int segMethod = para.getSegMethod();
 
 	String fullpathtoTrainedData0 = para.getTrainedDataFullPath0();
-
 	String fullpathtoTrainedData1 = para.getTrainedDataFullPath1();
 
 	/**
@@ -50,7 +58,7 @@ public class AutoThresholdAdjuster3D { // there should be a constructor with
 	/** Array for linked 4D objects, field variable to store the results of */
 	Object4D[][] linkedArray;
 
-	Calibration cal, calkeep;
+	Calibration cal;
 
 	/**
 	 * Factor to multiply for depth, to correct for xy pixel scale =1
@@ -110,7 +118,9 @@ public class AutoThresholdAdjuster3D { // there should be a constructor with
 			return;
 		}
 
-
+		showPlot(true);
+		setSilent(false);
+		
 		Roi r0 = imp0.getRoi();
 		Roi r1 = imp1.getRoi();
 		Roi r = null;
@@ -120,8 +130,6 @@ public class AutoThresholdAdjuster3D { // there should be a constructor with
 		// ... then start of segmentation and measurements
 		if ((r0 == null) && (r1 == null)) {
 			segAndMeasure(imp0, imp1);
-			GUIoutputs out = new GUIoutputs();
-			out.drawResultImages(linkedArray, imp0, imp1, obj4Dch0, obj4Dch1);
 
 		} else {
 			ImagePlus imp0roi = null;
@@ -173,8 +181,6 @@ public class AutoThresholdAdjuster3D { // there should be a constructor with
 			}
 
 			segAndMeasure(imp0roi, imp1roi);
-			GUIoutputs out = new GUIoutputs();
-			out.drawResultImages(linkedArray, imp0, imp1, obj4Dch0, obj4Dch1);
 		}
 	}
 
@@ -210,39 +216,22 @@ public class AutoThresholdAdjuster3D { // there should be a constructor with
 			return false;
 		}
 
-		
-		/*
-		 * in case of particle 3D, no binary images are produced so no composite
-		 * image.
-		 */
-		/* ImagePlus rgbbin = null;
-		 * temporarily out, 20140930 
-		 * if ((segMethod != 2) && (createComposite)){ 
-		 * ImagePlus ch0proj=null; 
-		 * ImagePlus ch1proj=null; 
-		 * ch0proj = createZprojTimeSeries(seg.binimp0, imp0.getNSlices(),imp0.getNFrames()); 
-		 * ch1proj = createZprojTimeSeries(seg.binimp1, imp1.getNSlices(), imp1.getNFrames()); 
-		 * ImageStack dummy = null;
-		 * RGBStackMerge rgbm = new RGBStackMerge(); 
-		 * ImageStack rgbstack = rgbm.mergeStacks(ch0proj.getWidth(), ch0proj.getHeight(),
-		 * ch0proj.getStackSize(), ch0proj.getStack(), ch1proj.getStack(),
-		 * dummy, true); 
-		 * rgbbin = new ImagePlus("binProjMerged", rgbstack);
-		 * rgbbin.show();
-		 * 
-		 * }
-		 */
-
 		// linkedArray = dotLinker(obj4Dch0, obj4Dch1, imp0.getNFrames());
 		this.linkedArray = seg.doSegmentation();
 
-		if (silent == false) {
+		//----GUI, Plottings -----
+		if (!silent) {
 			GUIoutputs out = new GUIoutputs();
 			out.showStatistics(obj4Dch0);
 			out.showStatistics(obj4Dch1);
 			out.showDistances(linkedArray);
+			if (showplots){
+				out.drawResultImages(linkedArray, imp0, imp1, obj4Dch0, obj4Dch1);
+				// in case of particle 3D, no binary images are produced so no composite image.
+				if ((segMethod != 2) && (createComposite))
+					out.showCompositeBinary((SegmentatonByThresholdAdjust) seg);
+			}
 		}
-
 		return true;
 	}
 
@@ -251,6 +240,10 @@ public class AutoThresholdAdjuster3D { // there should be a constructor with
 		silent = z;
 	}
 
+	public void showPlot(boolean show) {
+		showplots = show;
+	}	
+	
 	public void setParameters() {
 
 	}
@@ -268,7 +261,6 @@ public class AutoThresholdAdjuster3D { // there should be a constructor with
 		cal = imp.getCalibration();
 		if (Double.isNaN(cal.pixelDepth))
 			return gotScale;
-		calkeep = cal.copy();
 		zfactor = cal.pixelDepth / cal.pixelWidth;
 		return true;
 	}
@@ -297,6 +289,7 @@ public class AutoThresholdAdjuster3D { // there should be a constructor with
 			IJ.error("Voxel Depth(z)is not defined correctly: check [Image -> properties]");
 			return;
 		}
+		ata.showPlot(true);
 		ata.segAndMeasure(imp0, imp1);
 
 	}
