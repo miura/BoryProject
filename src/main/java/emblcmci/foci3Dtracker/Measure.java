@@ -9,7 +9,7 @@ public class Measure {
 
 	//This method calculates the distance between the dots in pixel
 	// Christoph
-	public double returnDistance(Object4D obj1, Object4D obj2){
+	public static double returnDistance(Object4D obj1, Object4D obj2){
 		double dist = -1.0;
 		if ((obj1.centroid.length > 1) && (obj2.centroid.length > 1)) {
 			double sqd = (Math.pow( (obj1.centroid[0] - obj2.centroid[0]), 2.0)    // changed 2 to 2.0
@@ -23,7 +23,7 @@ public class Measure {
 
 	//This method calculates the distance between the dots in microns
 	// Christoph
-	public double returnDistanceMicrons(Object4D obj1, Object4D obj2, Calibration cal){
+	public static double returnDistanceMicrons(Object4D obj1, Object4D obj2, Calibration cal){
 		double dist = -1.0;
 
 		if ((obj1.centroid.length > 1) && (obj2.centroid.length > 1)) {
@@ -38,7 +38,7 @@ public class Measure {
 	
 	//for calculating distance in pixels, z distance scaled to XY pixels. 
 	// this method was used in the plugin. 
-	public double returnDistanceZfact(Object4D obj1, Object4D obj2, double zfactor){
+	public static double returnDistanceZfact(Object4D obj1, Object4D obj2, double zfactor){
 		   double dist = -1.0;
 		   if ((obj1.centroid.length > 1) && (obj2.centroid.length > 1)) {
 			   double sqd = (

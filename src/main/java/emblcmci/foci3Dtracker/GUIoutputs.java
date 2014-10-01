@@ -25,7 +25,7 @@ import Utilities.Object3D;
 public class GUIoutputs {
 
 	// added on 20140926
-	public void drawResultImages(Object4D[][] linkedArray, 
+	public void drawResultImages(ArrayList<FociPair> linkedArray, 
 			ImagePlus imp0,
 			ImagePlus imp1, 
 			ArrayList<Object4D> obj4Dch0,
@@ -45,7 +45,8 @@ public class GUIoutputs {
 	 * modified by Christoph Schiklenk
 	 * @return 
 	 */
-	public ImagePlus drawlinksGrayscale(Object4D[][] linked, ImagePlus imp0, ImagePlus imp1){
+	public ImagePlus drawlinksGrayscale(ArrayList<FociPair> linked,
+			ImagePlus imp0, ImagePlus imp1) {
 		ImagePlus ch0proj = null;
 		ImagePlus ch1proj = null;
 
@@ -58,31 +59,32 @@ public class GUIoutputs {
 
 		int offset = 0;
 		int ch0x, ch0y, ch1x, ch1y;
-		for(int i = 0;  i < linked.length; i++) {
-			for(int j = 0;  j < linked[0].length; j += 2) {
-				if (linked[i][j] != null){
-					ch0x = Math.round(linked[i][j].centroid[0] - offset);
-					ch0y = Math.round(linked[i][j].centroid[1] - offset);
-					ch1x = Math.round(linked[i][j + 1].centroid[0] - offset);
-					ch1y = Math.round(linked[i][j + 1].centroid[1] - offset);
-					ImageProcessor ip0 = ch0proj.getStack().getProcessor(linked[i][j].timepoint + 1);
-					ip0.setColor(Color.blue);
-					ip0.drawLine(ch0x, ch0y, ch1x, ch1y);
-					ip0.setColor(Color.yellow);
-					ip0.drawPixel(ch0x, ch0y);
-					ip0.setColor(Color.red);
-					ip0.drawPixel(ch1x, ch1y);					
-					ImageProcessor ip1 = ch1proj.getStack().getProcessor(linked[i][j].timepoint + 1);
-					ip1.setColor(Color.blue);
-					ip1.drawLine(ch0x, ch0y, ch1x, ch1y);
-					ip1.setColor(Color.yellow);
-					ip1.drawPixel(ch0x, ch0y);
-					ip1.setColor(Color.red);
-					ip1.drawPixel(ch1x, ch1y);
-				}	
+		for (FociPair pair : linked) {
+			if (pair != null) {
+				ch0x = Math.round(pair.ch0dot.centroid[0] - offset);
+				ch0y = Math.round(pair.ch0dot.centroid[1] - offset);
+				ch1x = Math.round(pair.ch1dot.centroid[0] - offset);
+				ch1y = Math.round(pair.ch1dot.centroid[1] - offset);
+				ImageProcessor ip0 = ch0proj.getStack().getProcessor(
+						pair.timepoint + 1);
+				ip0.setColor(Color.blue);
+				ip0.drawLine(ch0x, ch0y, ch1x, ch1y);
+				ip0.setColor(Color.yellow);
+				ip0.drawPixel(ch0x, ch0y);
+				ip0.setColor(Color.red);
+				ip0.drawPixel(ch1x, ch1y);
+				ImageProcessor ip1 = ch1proj.getStack().getProcessor(
+						pair.timepoint + 1);
+				ip1.setColor(Color.blue);
+				ip1.drawLine(ch0x, ch0y, ch1x, ch1y);
+				ip1.setColor(Color.yellow);
+				ip1.drawPixel(ch0x, ch0y);
+				ip1.setColor(Color.red);
+				ip1.drawPixel(ch1x, ch1y);
 			}
 		}
-		ImageStack combined = new StackCombiner().combineHorizontally(ch0proj.getStack(), ch1proj.getStack());
+		ImageStack combined = new StackCombiner().combineHorizontally(
+				ch0proj.getStack(), ch1proj.getStack());
 		ImagePlus combimp = new ImagePlus("DetectedDots", combined);
 		return combimp;
 	}
@@ -104,21 +106,6 @@ public class GUIoutputs {
 		ImagePlus rgbbin = new ImagePlus("binProjMerged", rgbstack);
 		rgbbin.show();
 	}
-	/* 
-	 * temporarily out, 20140930 
-	 * if ((segMethod != 2) && (createComposite)){ 
-
-	 *  
-	 *  
-	 * 
-	 * 
-	 * 
-	 * 
-	 * 
-	 * 
-	 * }
-	 */	
-
 	
 	/**
 	 * Show Object4D vector in Results window. 
@@ -143,36 +130,33 @@ public class GUIoutputs {
 		rt.show("Statistics_"+obj4Dv.get(0).chnum);     
 	}
 
-	public void showDistances(Object4D[][] linked){
+	public void showDistances(ArrayList<FociPair> linked){
 		ResultsTable rt;        
 		rt = new ResultsTable();
 		int ct = 0;
 		double ch0ch1dist = -1;
         Measure m = new Measure();
-		for (int i=0; i<linked.length; i++){
-			for (int j = 0; j < linked[0].length; j += 2){
-				if ((linked[i][j] != null) && (linked[i][j+1] != null)){
-					rt.incrementCounter();
-					ch0ch1dist = m.returnDistance(linked[i][j], linked[i][j+1]);
-					rt.setValue("frame", ct, linked[i][j].timepoint);
-					rt.setValue("ch0-ch1_dist", ct, ch0ch1dist);
-					double ch0dist = 0;
-					double ch1dist = 0;
-					if (linked[i][3] != null) {
-						ch0dist = m.returnDistance(linked[i][0], linked[i][2]);
-						ch1dist = m.returnDistance(linked[i][1], linked[i][3]);
-					}
-					rt.setValue("ch0-ch0_dist", ct, ch0dist);
-					rt.setValue("ch1-ch1_dist", ct, ch1dist);
-					rt.setValue("ch0vol", ct, linked[i][j].size);
-					rt.setValue("ch1vol", ct, linked[i][j+1].size);
+		for (FociPair pair : linked) {
 
-					ct++;
-				}
+			if ((pair.ch0dot != null) && (pair.ch1dot != null)) {
+				rt.incrementCounter();
+				// ch0ch1dist = m.returnDistance(linked[i][j], linked[i][j+1]);
+				ch0ch1dist = pair.distance;
+				rt.setValue("frame", ct, pair.timepoint);
+				rt.setValue("ch0-ch1_dist", ct, ch0ch1dist);
+				//if (pair.distanceToOtherPairsch0.size() > 0){
+				for (Double dist : pair.distanceToOtherPairsch0)
+					rt.setValue("ch0-ch0_dist", ct, dist);
+				for (Double dist : pair.distanceToOtherPairsch1)
+					rt.setValue("ch1-ch1_dist", ct, dist);					
+				//}
+				rt.setValue("ch0vol", ct, pair.ch0dot.size);
+				rt.setValue("ch1vol", ct, pair.ch1dot.size);
+				ct++;
 			}
 		}
 
-		rt.show("Statistics_Distance");     
+		rt.show("Statistics_Distance");  
 	}
 
 	/* for plotting Object4Ds detected by segmentation. 

@@ -56,7 +56,7 @@ public class AutoThresholdAdjuster3D { // there should be a constructor with
 	ArrayList<Object4D> obj4Dch1 = new ArrayList<Object4D>();
 
 	/** Array for linked 4D objects, field variable to store the results of */
-	Object4D[][] linkedArray;
+	ArrayList<FociPair> linkedArray;
 
 	Calibration cal;
 
@@ -64,7 +64,7 @@ public class AutoThresholdAdjuster3D { // there should be a constructor with
 	 * Factor to multiply for depth, to correct for xy pixel scale =1
 	 * 
 	 */
-	double zfactor;
+	static double zfactor;
 
 	public void run() {
 		// ** get a list of opened windows.
@@ -204,13 +204,17 @@ public class AutoThresholdAdjuster3D { // there should be a constructor with
 	 */
 	public boolean segAndMeasure(ImagePlus imp0, ImagePlus imp1) {
 
+		// sets Z factor to this instance
+		setScale(imp0);
+		System.out.println("Zfactor"+ Double.toString(zfactor));
+		
 		Segmentation seg;
 		// auto adjusted threshold segmentation
 		if (segMethod == 0) {
 			// binimp0 = segmentaitonByObjectSize(imp0);
 			// binimp1 = segmentaitonByObjectSize(imp1);
 			seg = new SegmentatonByThresholdAdjust();
-			seg.setComponents(imp0, imp1, this.obj4Dch0, this.obj4Dch1);
+			seg.setComponents(imp0, imp1, this.obj4Dch0, this.obj4Dch1, zfactor);
 
 		} else {
 			return false;
@@ -242,6 +246,7 @@ public class AutoThresholdAdjuster3D { // there should be a constructor with
 
 	public void showPlot(boolean show) {
 		showplots = show;
+		setSilent(false);
 	}	
 	
 	public void setParameters() {
@@ -252,7 +257,7 @@ public class AutoThresholdAdjuster3D { // there should be a constructor with
 	// argument int channel here.
 	// return []
 	// }
-	public Object4D[][] getLinkedArray() {
+	public ArrayList<FociPair> getLinkedArray() {
 		return linkedArray;
 	}
 
@@ -284,11 +289,11 @@ public class AutoThresholdAdjuster3D { // there should be a constructor with
 		ImagePlus imp1 = IJ
 				.openImage("/Users/miura/Dropbox/people/ChristophSchiklenk/tt/c2pcd.tif");
 		AutoThresholdAdjuster3D ata = new AutoThresholdAdjuster3D();
-		// @TODO setting scale should be associated with measurement class
-		if (!ata.setScale(imp0)) {
-			IJ.error("Voxel Depth(z)is not defined correctly: check [Image -> properties]");
-			return;
-		}
+//		// @TODO setting scale should be associated with measurement class
+//		if (!ata.setScale(imp0)) {
+//			IJ.error("Voxel Depth(z)is not defined correctly: check [Image -> properties]");
+//			return;
+//		}
 		ata.showPlot(true);
 		ata.segAndMeasure(imp0, imp1);
 

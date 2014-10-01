@@ -31,7 +31,7 @@ public class AutoThrAdj3D_rewrite {
 	 * Array for linked 4D objects, field variable to store the results of
 	 * linking process
 	 */
-	Object4D[][] linkedArray;
+	ArrayList<FociPair> linkedArray;
 
 	/** z-Projection image of detected dots */
 	ImagePlus linkedImage;
@@ -78,7 +78,7 @@ public class AutoThrAdj3D_rewrite {
 	}
 */
 	
-	public Object4D[][] getLinkedArray() {
+	public ArrayList<FociPair> getLinkedArray() {
 		return linkedArray;
 	}
 
@@ -94,7 +94,7 @@ public class AutoThrAdj3D_rewrite {
 		// this.linkedArray = dotLinker(obj4Dch0, obj4Dch1, imp0.getNFrames());
 
 		Segmentation seg = new SegmentatonByThresholdAdjust();
-		seg.setComponents(imp0, imp1, obj4Dch0, obj4Dch1);
+		seg.setComponents(imp0, imp1, obj4Dch0, obj4Dch1, zfactor);
 		this.linkedArray = seg.doSegmentation();
 		GUIoutputs out = new GUIoutputs();
 		this.linkedImage = out.drawlinksGrayscale(this.linkedArray, imp0, imp1);

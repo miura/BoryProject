@@ -10,7 +10,8 @@ public abstract class Segmentation {
 	public ImagePlus binimp0;
 	public ImagePlus binimp1;
 	
-	abstract Segmentation setComponents(ImagePlus imp0, ImagePlus imp1, ArrayList<Object4D> obj4Dch0, ArrayList<Object4D> obj4Dch1);
+	abstract Segmentation setComponents(ImagePlus imp0, ImagePlus imp1, ArrayList<Object4D> obj4Dch0, ArrayList<Object4D> obj4Dch1, double zfactor);
 
-	abstract public Object4D[][] doSegmentation();
+	abstract public ArrayList<FociPair> doSegmentation();
+	
 }

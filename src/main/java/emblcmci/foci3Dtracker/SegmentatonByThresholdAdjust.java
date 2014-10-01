@@ -6,7 +6,6 @@ import java.util.Vector;
 
 import Utilities.Counter3D;
 import Utilities.Object3D;
-
 import ij.IJ;
 import ij.ImagePlus;
 import ij.Prefs;
@@ -52,6 +51,7 @@ public class SegmentatonByThresholdAdjust extends Segmentation {
 													// minspotvoxels?
 	boolean excludeOnEdges, newRT, redirect;
 	boolean showMaskedImg = false;
+	private double zfactor;
 
 	public SegmentatonByThresholdAdjust() {
 		setStoredParam(para);
@@ -92,12 +92,13 @@ public class SegmentatonByThresholdAdjust extends Segmentation {
 
 	@Override
 	public SegmentatonByThresholdAdjust setComponents(ImagePlus imp0,
-			ImagePlus imp1, ArrayList<Object4D> obj4Dch0, ArrayList<Object4D> obj4Dch1) {
+			ImagePlus imp1, ArrayList<Object4D> obj4Dch0, ArrayList<Object4D> obj4Dch1, double zfactor) {
 		SegmentatonByThresholdAdjust seg = new SegmentatonByThresholdAdjust();
 		this.imp0 = imp0;
 		this.imp1 = imp1;
 		this.obj4Dch0 = obj4Dch0;
 		this.obj4Dch1 = obj4Dch1;
+		this.zfactor = zfactor;
 		return seg;
 	}
 
@@ -116,7 +117,9 @@ public class SegmentatonByThresholdAdjust extends Segmentation {
 //		this.thadj_nummax = thadj_nummax;
 //	}
 
-	public Object4D[][] doSegmentation() {
+//	public Object4D[][] doSegmentation() {
+	public ArrayList<FociPair> doSegmentation() {
+
 		// auto adjusted threshold segmentation
 		this.binimp0 = segmentaitonByObjectSize(this.imp0);
 		this.binimp1 = segmentaitonByObjectSize(this.imp1);
@@ -129,9 +132,10 @@ public class SegmentatonByThresholdAdjust extends Segmentation {
 		int ch1objnum = measureDots(this.binimp1, "Ch1", this.obj4Dch1);
 
 		DotLinker linker = new DotLinker(this.obj4Dch0, this.obj4Dch1,
-				this.imp0.getNFrames());
+				this.imp0.getNFrames(), zfactor);
 
-		Object4D[][] linkedArray = linker.linkDots();
+		//Object4D[][] linkedArray = linker.linkDots();
+		ArrayList<FociPair> linkedArray = linker.linkDots();
 		return linkedArray;
 	}
 
