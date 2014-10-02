@@ -1,0 +1,10 @@
+.externalToolBuilders/*
+bin/*
+imagej/*
+.DS_Store
+target/*
+.settings/*
+/target
+tags
+.project
+.pydevproject
